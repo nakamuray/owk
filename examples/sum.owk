@@ -1,0 +1,10 @@
+# seq 10 | owk -f sum.owk
+result = ref 0;
+
+main = {
+  result := result () + num _.1;
+};
+
+end = {
+  print : result ();
+};

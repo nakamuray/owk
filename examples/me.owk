@@ -1,0 +1,6 @@
+# owk -i json -o json -f me.owk < timeline.json
+main = obj -> {
+  obj.user.screen_name == "me" ? {
+    print obj;
+  };
+};

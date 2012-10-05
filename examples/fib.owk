@@ -1,0 +1,15 @@
+fib = n -> {
+  catch {
+    n == 0 ? { throw 0 };
+    n == 1 ? { throw 1 };
+    fib (n-1) + fib (n-2);
+  };
+};
+
+print : fib 0;
+print : fib 1;
+print : fib 2;
+print : fib 10;
+print : fib 20;
+
+exit ();
