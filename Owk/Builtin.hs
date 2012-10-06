@@ -212,6 +212,8 @@ toText obj = let String t = str obj in t
 
 numop :: (Number -> Number -> Number) -> Function
 numop op (Number l:Number r:_) = return $ Number $ l `op` r
+numop op (n@(Number _):Unit:_) = numop op [n, num Unit]
+numop op (Unit:n@(Number _):_) = numop op [num Unit, n]
 numop _ (Number _:obj) = exception $ String $ "not a number: " ++. showText obj
 numop _ (obj:_) = exception $ String $ "not a number: " ++. showText obj
 
