@@ -169,6 +169,7 @@ if_ (b:_) = return . Function Builtin $ \(block:_) ->
 
 for :: Function
 for (List v:_) = return . Function Builtin $ \(block:_) -> V.foldM (\_ obj -> funcCall block [obj]) Unit v
+for (d@(Dict _):args) = for (list d:args)
 for (Unit:args) = for (list Unit:args)
 for _ = exception $ String "for: not implemented"
 
