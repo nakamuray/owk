@@ -14,6 +14,7 @@ import qualified Data.HashMap.Strict as H
 import qualified Data.Text as T
 import qualified Data.Text.IO as TI
 import qualified Data.Vector as V
+import qualified Data.Vector.Algorithms.Intro as VI
 
 import Owk.Interpreter
 import Owk.Type
@@ -29,6 +30,8 @@ builtins =
     , ("num", builtin0 num)
     , ("bool", builtin0 bool)
     , ("ref", Function Builtin $ \(obj:_) -> Ref <$> ref obj)
+
+    , ("sort", builtin sort)
 
       -- operators
     , ("__add__", builtin __add__)
@@ -66,6 +69,19 @@ builtins =
     , ("next", builtin $ const next)
     , ("exit", builtin exit_)
     ]
+
+
+-- functions
+sort :: Function
+sort (List v:_) = do
+    v' <- liftIO $ do
+        vm <- V.thaw v
+        VI.sort vm
+        V.freeze vm
+    return $ List v'
+sort (d@(Dict _):args) = sort (list d:args)
+sort (Unit:args) = sort (list Unit:args)
+sort (obj:_) = exception $ String $ "sort: not a List: " ++. showText obj
 
 
 -- operators

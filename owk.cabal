@@ -31,6 +31,7 @@ executable owk
                      , text-icu
                      , unordered-containers
                      , vector
+                     , vector-algorithms
 
   --ghc-options:         -O2 -Wall -fno-warn-unused-do-bind
   ghc-options:         -O2
