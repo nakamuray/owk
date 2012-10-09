@@ -5,7 +5,7 @@ import Control.Applicative ((<$>))
 import Data.Aeson as A
 import Data.Aeson.Parser (json)
 import Data.Attoparsec
-import System.IO (hPutStrLn, stderr)
+import System.IO (hFlush, hPutStrLn, stderr)
 
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as BL
@@ -19,7 +19,9 @@ import Owk.Util
 ioplugin :: IOPlugin
 ioplugin = IOPlugin
     { reader = jsonReader
-    , writer = \h objs -> BL.hPutStrLn h $ BL.intercalate " " $ map encode objs
+    , writer = \h objs -> do
+        BL.hPutStrLn h $ BL.intercalate " " $ map encode objs
+        hFlush h
     }
 
 jsonReader h f = go (Right "")
