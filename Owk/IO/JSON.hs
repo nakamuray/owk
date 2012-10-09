@@ -26,7 +26,9 @@ jsonReader h f = go (Right "")
   where
     go (Right buf) = go2 $ parse json buf
     go (Left p) = do
-        buf <- B.hGet h bufsize
+        -- XXX: I want hGet not to wait buffer filled, but couldn't find the way.
+        --buf <- B.hGet h bufsize
+        buf <- B.hGetLine h
         go2 $ p buf
 
     go2 e@(Fail _ _ _)  = hPutStrLn stderr $ show e
