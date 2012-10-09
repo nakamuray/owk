@@ -192,6 +192,7 @@ dict _ = undefined
 
 list :: Object -> Object
 list o@(List _) = o
+list (Dict h) = List $ V.fromList $ map String $ H.keys h
 list Unit = List V.empty
 list _ = undefined
 
