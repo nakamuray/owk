@@ -36,15 +36,17 @@ main = do
         config -> run config
 
 run :: Config -> IO ()
-run (Config _ _ fname script r w) = do
+run (Config _ _ em fname script r w) = do
     script' <- script
     n <- Namespace.fromList builtins
     Namespace.insertIO "print" (makePrint $ w stdout) n
     case parseOwk fname script' of
         Left e     -> hPutStrLn stderr e >> exitFailure
         Right prog -> do
+            let prog' = if em then AST.Program $ [AST.Define "main" $ AST.Function ["$"] $ unProg prog]
+                              else prog
             -- update global namespace
-            runOwk (interpret prog `catchError` catchExit) n >> return ()
+            runOwk (interpret prog' `catchError` catchExit) n >> return ()
             mmain <- Namespace.lookupIO "main" $ Type.Global n
             case mmain of
                 Nothing    -> error "no `main` found"
@@ -59,6 +61,8 @@ run (Config _ _ fname script r w) = do
                             return ()
                         Nothing  -> return ()
   where
+    unProg (Program es) = es
+
     ignoreNext Next = return Type.Unit
     ignoreNext e    = throwError e
 
@@ -79,6 +83,7 @@ usage = unlines
     , ""
     , "OPTIONS: -h          print this help"
     , "         -d          dump AST and exit"
+    , "         -m          explicit `main = $ -> { ... }` function definition"
     , "         -i PLUGIN   use PLUGIN as a input decoder"
     , "         -o PLUGIN   use PLUGIN as a output encoder"
     , "         -io PLUGIN  set both decoder/encoder"
@@ -90,6 +95,7 @@ pprint = putStrLn . ppShow
 data Config = Config
   { showHelp :: Bool
   , dumpAST :: Bool
+  , explicitMain :: Bool
   , fileName :: FilePath
   , owkScript :: IO T.Text
   , ioReader :: IOReader
@@ -97,7 +103,7 @@ data Config = Config
   }
 
 defaultConfig :: Config
-defaultConfig = Config False False "<stdin>" TI.getContents (reader Line.ioplugin)  (writer Line.ioplugin)
+defaultConfig = Config False False False "<stdin>" TI.getContents (reader Line.ioplugin)  (writer Line.ioplugin)
 
 parseArgs :: [String] -> Config
 parseArgs args = parseArgs' defaultConfig args
@@ -106,6 +112,7 @@ parseArgs' :: Config -> [String] -> Config
 parseArgs' config [] = config
 parseArgs' config ("-h":args) = parseArgs' config { showHelp = True } args
 parseArgs' config ("-d":args) = parseArgs' config { dumpAST = True } args
+parseArgs' config ("-m":args) = parseArgs' config { explicitMain = True } args
 parseArgs' config ("-f":fname:args) = parseArgs' config { fileName = fname, owkScript = TI.readFile fname } args
 parseArgs' config ("-i":pname:args) =
     case lookup pname ioplugins of
