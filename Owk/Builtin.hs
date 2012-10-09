@@ -24,10 +24,10 @@ builtins =
     [ ("true", Bool True)
     , ("false", Bool False)
     , ("unit", Unit)
-    , ("list", builtin $ \(obj:_) -> return $ list obj)
-    , ("str", builtin $ \(obj:_) -> return $ str obj)
-    , ("num", builtin $ \(obj:_) -> return $ num obj)
-    , ("bool", builtin $ \(obj:_) -> return $ bool obj)
+    , ("list", builtin0 list)
+    , ("str", builtin0 str)
+    , ("num", builtin0 num)
+    , ("bool", builtin0 bool)
     , ("ref", Function Builtin $ \(obj:_) -> Ref <$> ref obj)
 
       -- operators
@@ -233,3 +233,7 @@ isTrue obj = isTrue $ bool obj
 
 builtin :: Function -> Object
 builtin f = Function Builtin f
+
+-- create `Function` from Object to Object function
+builtin0 :: (Object -> Object) -> Object
+builtin0 f = Function Builtin $ \(arg:_) -> return $ f arg
