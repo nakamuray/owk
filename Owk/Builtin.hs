@@ -77,7 +77,7 @@ sort (List v:_) = do
     v' <- liftIO $ do
         vm <- V.thaw v
         VI.sort vm
-        V.freeze vm
+        V.unsafeFreeze vm
     return $ List v'
 sort (d@(Dict _):args) = sort (list d:args)
 sort (Unit:args) = sort (list Unit:args)
