@@ -168,7 +168,8 @@ if_ (b:_) = return . Function Builtin $ \(block:_) ->
 
 for :: Function
 for (List v:_) = return . Function Builtin $ \(block:_) -> V.foldM (\_ obj -> funcCall block [obj]) Unit v
-for _ = exception $ String "__for__: not implemented"
+for (Unit:args) = for (list Unit:args)
+for _ = exception $ String "for: not implemented"
 
 while :: Function
 while (cond:_) = return . Function Builtin $ \(block:_) -> go block Unit
