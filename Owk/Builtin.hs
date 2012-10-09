@@ -24,6 +24,7 @@ builtins =
     [ ("true", Bool True)
     , ("false", Bool False)
     , ("unit", Unit)
+    , ("list", builtin $ \(obj:_) -> return $ list obj)
     , ("str", builtin $ \(obj:_) -> return $ str obj)
     , ("num", builtin $ \(obj:_) -> return $ num obj)
     , ("bool", builtin $ \(obj:_) -> return $ bool obj)
