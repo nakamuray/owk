@@ -97,7 +97,7 @@ data Config = Config
   }
 
 defaultConfig :: Config
-defaultConfig = Config False False "" TI.getContents (reader Line.ioplugin)  (writer Line.ioplugin)
+defaultConfig = Config False False "<stdin>" TI.getContents (reader Line.ioplugin)  (writer Line.ioplugin)
 
 parseArgs :: [String] -> Config
 parseArgs args = parseArgs' defaultConfig args
@@ -116,4 +116,4 @@ parseArgs' config ("-o":pname:args) =
         Just plugin -> parseArgs' config { ioWriter = writer plugin} args
         Nothing     -> error $ "unknown plugin name: " ++ pname
 parseArgs' config ("-io":pname:args) = parseArgs' config $ "-i":pname:"-o":pname:args
-parseArgs' config (script:args) = parseArgs' config { owkScript = return $ T.pack script } args
+parseArgs' config (script:args) = parseArgs' config { fileName = "<string>", owkScript = return $ T.pack script } args
