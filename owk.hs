@@ -108,4 +108,5 @@ parseArgs' config ("-o":pname:args) =
     case lookup pname ioplugins of
         Just plugin -> parseArgs' config { ioWriter = writer plugin} args
         Nothing     -> error $ "unknown plugin name: " ++ pname
+parseArgs' config ("-io":pname:args) = parseArgs' config $ "-i":pname:"-o":pname:args
 parseArgs' config (script:args) = parseArgs' config { owkScript = return $ T.pack script } args
