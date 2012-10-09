@@ -73,10 +73,17 @@ ioplugins =
   ]
 
 usage :: String
-usage = "usage: owk <owk script> \
-        \   or: owk [-f <script name>]"
+usage = unlines
+    [ "usage: owk [OPTIONS] <owk script>"
+    , "   or: owk [OPTIONS] [-f <script name>]"
+    , ""
+    , "OPTIONS: -h          print this help"
+    , "         -d          dump AST and exit"
+    , "         -i PLUGIN   use PLUGIN as a input decoder"
+    , "         -o PLUGIN   use PLUGIN as a output encoder"
+    , "         -io PLUGIN  set both decoder/encoder"
+    ]
 
--- FIXME: don't copy and paste!
 pprint :: Show a => a -> IO ()
 pprint = putStrLn . ppShow
 
