@@ -64,6 +64,7 @@ builtins =
 
     , ("return", builtin return_)
     , ("print", builtin print)
+    , ("getobj", builtin getobj)
     , ("catch", builtin catch_)
     , ("throw", builtin throw)
     , ("next", builtin $ const next)
@@ -203,13 +204,15 @@ return_ (ret:_) = throwError $ Return ret
 
 print :: Function
 print args = do
-    liftIO $ TI.putStrLn $ T.intercalate " " $ map toText args
+    lift $ yield args
     return $ Bool True
 
-makePrint :: ([Object] -> IO ()) -> Object
-makePrint f = Function Builtin $ \args -> do
-    liftIO $ f args
-    return $ Bool True
+getobj :: Function
+getobj _ = do
+    mo <- lift await
+    case mo of
+        Just o  -> return o
+        Nothing -> return Unit
 
 catch_ :: Function
 catch_ (body:_) = funcCall body [] `catchError` catch'
@@ -224,10 +227,6 @@ exit_ :: Function
 exit_ (Number (I i):_) = exit $ fromInteger i
 exit_ (Number (D d):_) = exit $ error "exit with Double: not implemented" d
 exit_ _ = exit 0
-
-toText :: Object -> T.Text
-toText (String t) = t
-toText obj = let String t = str obj in t
 
 numop :: (Number -> Number -> Number) -> Function
 numop op (Number l:Number r:_) = return $ Number $ l `op` r

@@ -1,48 +1,35 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Owk.IO.JSON where
 
+import Data.Conduit
+
 import Control.Applicative ((<$>))
 import Data.Aeson as A
 import Data.Aeson.Parser (json)
 import Data.Attoparsec
-import System.IO (hFlush, hPutStrLn, stderr)
+import System.IO (hPutStrLn, stderr)
 
+import qualified Data.Conduit.Attoparsec as CA
+import qualified Data.Conduit.Binary as CB
+import qualified Data.Conduit.List as CL
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.HashMap.Strict as H
 import qualified Data.Vector as V
 
-import Owk.IO.Plugin
+import Owk.IO.Type
 import Owk.Type as O
 import Owk.Util
 
-ioplugin :: IOPlugin
-ioplugin = IOPlugin
-    { reader = jsonReader
-    , writer = \h objs -> do
-        BL.hPutStrLn h $ BL.intercalate " " $ map encode objs
-        hFlush h
+iopipe :: IOPipe
+iopipe = IOPipe
+    { input = CA.conduitParser json =$= awaitForever (yieldObj . fromJSON . snd)
+    , output = CL.map (B.concat . BL.toChunks . BL.intercalate " " . map encode)
     }
-
-jsonReader h f = go (Right "")
   where
-    go (Right buf) = go2 $ parse json buf
-    go (Left p) = do
-        -- XXX: I want hGet not to wait buffer filled, but couldn't find the way.
-        --buf <- B.hGet h bufsize
-        buf <- B.hGetLine h
-        go2 $ p buf
-
-    go2 e@(Fail _ _ _)  = hPutStrLn stderr $ show e
-    go2 (Done buf' j) = do
-        case fromJSON j of
-            A.Error e -> hPutStrLn stderr e
-            A.Success (O.List v) -> V.mapM_ (\o -> f [o]) v
-            A.Success obj -> f [obj]
-        go (Right buf')
-    go2 (Partial p)   = go (Left p)
-
-    bufsize = 4096
+    yieldObj (A.Error e)            = liftIO $ hPutStrLn stderr e
+    yieldObj (A.Success (O.List v)) = V.mapM_ yield v
+    yieldObj (A.Success obj)        = yield obj
 
 instance FromJSON O.Object where
     -- XXX: 何かきれいに書ける方法がありそうな気がしている

@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE Rank2Types #-}
 module Owk.Interpreter where
 
 import Control.Applicative ((<$>))
@@ -23,6 +24,9 @@ import Owk.Type as Type
 
 interpret :: Program -> Owk Object
 interpret (Program es) = foldM (const expr) Type.Unit es
+
+interpret_ :: Program -> Owk ()
+interpret_ (Program es) = mapM_ expr es
 
 expr :: Expression -> Owk Object
 expr (AST.Function params es) = do

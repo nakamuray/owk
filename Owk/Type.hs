@@ -24,17 +24,22 @@ module Owk.Type
     , readRef
     , writeRef
 
+    , yield
+    , await
+
     , module Control.Monad.Error
     , module Control.Monad.Reader
     , module Control.Monad.Trans
     ) where
+
+import Data.Conduit
 
 import Control.Applicative ((<$>))
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TVar (TVar, newTVarIO, readTVar, writeTVar)
 import Control.Monad.Error (Error, ErrorT, MonadError, throwError, runErrorT)
 import Control.Monad.Reader (MonadReader, ReaderT(..), runReaderT)
-import Control.Monad.Trans (MonadIO, liftIO)
+import Control.Monad.Trans (MonadIO, MonadTrans, lift, liftIO)
 import Data.Attoparsec.Number (Number(..))
 import Data.Text (Text)
 import Data.Vector (Vector)
@@ -46,8 +51,14 @@ import qualified Data.Vector as V
 import Owk.Util
 
 
-newtype Owk a = Owk (ErrorT ControlFlow (ReaderT Scope IO) a)
+newtype OwkT m a = OwkT (ErrorT ControlFlow (ReaderT Scope m) a)
     deriving (MonadError ControlFlow, MonadReader Scope, MonadIO, Monad, Functor)
+
+instance MonadTrans OwkT where
+    lift m = OwkT (lift $ lift m)
+
+type Owk a = OwkT OwkPipe a
+type OwkPipe = Pipe Object Object [Object] () IO
 
 data ControlFlow = Return Object | Exit Int | Exception Object | Next
     deriving Show
@@ -168,8 +179,8 @@ instance Ord Object where
 type Function = [Object] -> Owk Object
 type Ref = TVar Object
 
-runOwk :: Owk a -> Namespace -> IO a
-runOwk (Owk o) n = do
+runOwk :: Owk () -> Namespace -> Conduit Object IO [Object]
+runOwk (OwkT o) n = do
     ret <- runReaderT (runErrorT o) (Global n)
     case ret of
         Left  e -> error $ show e

@@ -20,8 +20,9 @@ executable owk
   build-depends:       base ==4.5.*
                      , aeson
                      , attoparsec
-                     , attoparsec-expr
+                     , attoparsec-conduit
                      , bytestring
+                     , conduit
                      , containers
                      , mtl
                      , parsec
