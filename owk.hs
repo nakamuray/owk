@@ -8,7 +8,7 @@ import Control.Monad (forever)
 import Control.Monad.Trans (liftIO)
 import Control.Monad.Error (catchError, throwError)
 import System.Environment (getArgs)
-import System.IO (hPutStrLn, stderr, stdin, stdout)
+import System.IO (BufferMode(LineBuffering), hPutStrLn, hSetBuffering, stderr, stdin, stdout)
 import System.Exit (ExitCode(..), exitFailure, exitSuccess, exitWith)
 import Text.Show.Pretty (ppShow)
 
@@ -42,6 +42,7 @@ main = do
 run :: Config -> IO ()
 run (Config _ _ em fname script i o) = do
     script' <- script
+    hSetBuffering stdout LineBuffering
     n <- Namespace.fromList builtins
     case parseOwk fname script' of
         Left e     -> hPutStrLn stderr e >> exitFailure
