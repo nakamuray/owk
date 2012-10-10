@@ -57,9 +57,10 @@ run (Config _ _ em fname script i o) = do
             case mmain of
                 Nothing    -> error "no `main` found"
                 Just owkMain -> do
+                    -- and then, run `main` function
                     let owkMain' = awaitForever $ \obj -> do
-                        runOwk (funcCall owkMain [obj] `catchError` ignoreNext `catchError` catchExit >> return ()) n
-                        return ()
+                            runOwk (funcCall owkMain [obj] `catchError` ignoreNext `catchError` catchExit >> return ()) n
+                            return ()
                     next $$++ owkMain' =$ sink
                     mend <- Namespace.lookupIO "end" $ Type.Global n
                     case mend of
@@ -94,6 +95,9 @@ usage = unlines
     , "         -i TYPE   use TYPE input decoder"
     , "         -o TYPE   use TYPE output encoder"
     , "         -io TYPE  set both decoder/encoder"
+    , ""
+    , "TYPE: line (default)"
+    , "      json"
     ]
 
 pprint :: Show a => a -> IO ()
