@@ -24,7 +24,7 @@ import Owk.Util
 iopipe :: IOPipe
 iopipe = IOPipe
     { input = CA.conduitParser json =$= awaitForever (yieldObj . fromJSON . snd)
-    , output = CL.map (B.concat . BL.toChunks . BL.intercalate " " . map encode)
+    , output = CL.map (flip B.append "\n" . B.concat . BL.toChunks . BL.intercalate " " . map encode)
     }
   where
     yieldObj (A.Error e)            = liftIO $ hPutStrLn stderr e
