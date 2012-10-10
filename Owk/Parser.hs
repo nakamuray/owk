@@ -2,17 +2,16 @@
 module Owk.Parser where
 
 import Control.Applicative hiding ((<|>), many)
+import Control.Monad.Identity (Identity)
 import Data.Attoparsec.Number (Number(..))
 import Data.Char (isHexDigit)
 import Numeric (readHex)
 import Text.Parsec as Parsec
 import Text.Parsec.Expr
-import Text.Parsec.Language (emptyDef)
 import Text.Parsec.Text
 
 import Data.Word (Word8)
 
-import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
 import qualified Data.Text.IO as TI
 
@@ -34,11 +33,16 @@ program = Program <$> (whiteSpace *> expression `sepEndBy` semicolon <* eof <?> 
 
 expression :: Parser Expression
 expression = buildExpressionParser table term
+
+symbol :: String -> Parser String
 symbol name = lexeme (string name)
---parens     = PT.parens lexer
+
+parens, braces, brackets :: Parser a -> Parser a
 parens p   = between (symbol "(") (symbol ")") p
 braces p   = between (symbol "{") (symbol "}") p
 brackets p = between (symbol "[") (symbol "]") p
+
+comma, colon, semicolon, dot :: Parser String
 comma      = symbol ","
 colon      = symbol ":"
 --semicolon :: Parser T.Text
@@ -48,6 +52,7 @@ dot        = symbol "."
 lexeme :: Parser a -> Parser a
 lexeme p = p <* whiteSpace
 
+whiteSpace :: Parser ()
 whiteSpace = skipMany (simpleSpaces <|> oneLineComment <?> "white spaces")
   where
     simpleSpaces = oneOf " \t\r\n" >> return ()
@@ -57,7 +62,7 @@ whiteSpace = skipMany (simpleSpaces <|> oneLineComment <?> "white spaces")
         return ()
 
 
---table :: OperatorTable B.ByteString Expression
+table :: OperatorTable T.Text () Identity Expression
 table = [ [unary "-" "__neg__", unary "+" "__num__"]
         , [binary "*" "__mul__" AssocLeft, binary "/" "__div__" AssocLeft, binary "%" "__mod__" AssocLeft]
         , [binary "+" "__add__" AssocLeft, binary "-" "__sub__" AssocLeft]
@@ -70,10 +75,10 @@ table = [ [unary "-" "__neg__", unary "+" "__num__"]
         , [binary ":=" "__wref__" AssocNone]
         ]
 
---unary :: B.ByteString -> T.Text -> Operator B.ByteString Expression
+unary :: String -> T.Text -> Operator T.Text () Identity Expression
 unary  name fun       = Prefix (do{ reservedOp name; return $ \x -> FuncCall (Variable fun) [x] })
 
---binary :: B.ByteString -> T.Text -> Assoc -> Operator B.ByteString Expression
+binary :: String -> T.Text -> Assoc -> Operator T.Text () Identity Expression
 binary  name fun assoc = Infix (do{ reservedOp name; return $ \x y -> FuncCall (Variable fun) [x, y] }) assoc
 
 reservedOp :: String -> Parser ()

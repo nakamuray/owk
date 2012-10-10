@@ -44,7 +44,7 @@ define n v = do
             writeTVar ns $ H.insert n v h
             return $ Just v
     case ret of
-        Just v  -> return v
+        Just v'  -> return v'
         Nothing -> exception $ Type.String $ "name `" ++. n ++. "` is already defined"
 
 currentNamepace :: Scope -> Namespace

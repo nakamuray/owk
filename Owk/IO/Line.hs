@@ -3,9 +3,6 @@ module Owk.IO.Line where
 
 import Data.Conduit
 
-import Control.Applicative ((<$>))
-
-import qualified Data.Conduit.Binary as CB
 import qualified Data.Conduit.List as CL
 import qualified Data.Conduit.Text as CT
 import qualified Data.Text as T
@@ -19,7 +16,7 @@ iopipe :: IOPipe
 iopipe = IOPipe
     { input = CT.decode CT.utf8 =$= CT.lines =$= CL.map (\line -> Dict
                                                          $ H.fromList
-                                                         $ zip (map showText [0..])
+                                                         $ zip (map showText [0 :: Int ..])
                                                          $ String line : map String (T.words line))
     , output = CL.map (\objs -> T.intercalate " " $ map toText objs ++ ["\n"]) =$= CT.encode CT.utf8
     }

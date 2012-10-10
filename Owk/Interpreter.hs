@@ -3,15 +3,10 @@
 module Owk.Interpreter where
 
 import Control.Applicative ((<$>))
-import Control.Concurrent.STM (STM, atomically)
-import Control.Concurrent.STM.TVar (TVar, readTVar, writeTVar)
 import Control.Monad (foldM)
-import Control.Monad.Error (Error, ErrorT, MonadError, catchError, throwError)
-import Control.Monad.Reader (MonadReader, ReaderT(..), ask, asks, local)
-import Control.Monad.Trans (MonadIO)
-import Data.Aeson.Types (Value(..))
+import Control.Monad.Error (MonadError, catchError)
+import Control.Monad.Reader (MonadReader, ask, local)
 
-import qualified Data.Text as T
 import qualified Data.HashMap.Strict as H
 import qualified Data.Vector as V
 
@@ -52,7 +47,7 @@ funcCall :: Object -> [Object] -> Owk Object
 funcCall (Type.Function s f) args = do
     s' <- liftIO $ Namespace.create s
     local (const s') $ catchReturn $ f args
-funcCall (Type.Ref ref) _ = readRef ref
+funcCall (Type.Ref r) _ = readRef r
 funcCall obj _ = exception $ Type.String $ "not a function: " ++. showText obj
 
 catchReturn :: Owk Object -> Owk Object

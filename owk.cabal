@@ -34,5 +34,4 @@ executable owk
                      , vector
                      , vector-algorithms
 
-  --ghc-options:         -O2 -Wall -fno-warn-unused-do-bind
-  ghc-options:         -O2
+  ghc-options:         -O2 -Wall -fno-warn-unused-do-bind

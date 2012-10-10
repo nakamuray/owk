@@ -4,9 +4,7 @@ module Main where
 import Data.Conduit
 
 import Control.Applicative ((<$>))
-import Control.Monad (forever)
-import Control.Monad.Trans (liftIO)
-import Control.Monad.Error (catchError, throwError)
+import Control.Monad.Error (catchError)
 import System.Environment (getArgs)
 import System.IO (BufferMode(LineBuffering), hPutStrLn, hSetBuffering, stderr, stdin, stdout)
 import System.Exit (ExitCode(..), exitFailure, exitSuccess, exitWith)
@@ -16,7 +14,6 @@ import qualified Data.Conduit.Binary as CB
 import qualified Data.Conduit.List as CL
 import qualified Data.Text as T
 import qualified Data.Text.IO as TI
-import qualified Data.HashMap.Strict as H
 
 import Owk.AST as AST
 import Owk.Builtin (builtins)
@@ -37,7 +34,7 @@ main = do
         Config { dumpAST = True
                , fileName = fname
                , owkScript = script } -> pprint . parseOwk fname =<< script
-        config -> run config
+        _ -> run config
 
 run :: Config -> IO ()
 run (Config _ _ em fname script i o) = do
@@ -52,7 +49,7 @@ run (Config _ _ em fname script i o) = do
                 source = CB.sourceHandle stdin $= i
                 sink = o =$ CB.sinkHandle stdout
             -- update global namespace
-            (next, _) <- source $$+ runOwk (interpret_ prog' `catchError` catchExit) n =$ sink
+            (cont, _) <- source $$+ runOwk (interpret_ prog' `catchError` catchExit) n =$ sink
             mmain <- Namespace.lookupIO "main" $ Type.Global n
             case mmain of
                 Nothing    -> error "no `main` found"
@@ -61,7 +58,7 @@ run (Config _ _ em fname script i o) = do
                     let owkMain' = awaitForever $ \obj -> do
                             runOwk (funcCall owkMain [obj] `catchError` ignoreNext `catchError` catchExit >> return ()) n
                             return ()
-                    next $$++ owkMain' =$ sink
+                    cont $$++ owkMain' =$ sink
                     mend <- Namespace.lookupIO "end" $ Type.Global n
                     case mend of
                         Just end -> do
@@ -75,7 +72,7 @@ run (Config _ _ em fname script i o) = do
     ignoreNext e    = throwError e
 
     catchExit (Exit 0) = liftIO exitSuccess
-    catchExit (Exit i) = liftIO $ exitWith $ ExitFailure i
+    catchExit (Exit c) = liftIO $ exitWith $ ExitFailure c
     catchExit e        = throwError e
 
 iopipes :: [(String, IOPipe)]

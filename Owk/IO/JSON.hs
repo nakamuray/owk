@@ -5,12 +5,9 @@ import Data.Conduit
 
 import Control.Applicative ((<$>))
 import Data.Aeson as A
-import Data.Aeson.Parser (json)
-import Data.Attoparsec
 import System.IO (hPutStrLn, stderr)
 
 import qualified Data.Conduit.Attoparsec as CA
-import qualified Data.Conduit.Binary as CB
 import qualified Data.Conduit.List as CL
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as BL
@@ -19,11 +16,10 @@ import qualified Data.Vector as V
 
 import Owk.IO.Type
 import Owk.Type as O
-import Owk.Util
 
 iopipe :: IOPipe
 iopipe = IOPipe
-    { input = CA.conduitParser json =$= awaitForever (yieldObj . fromJSON . snd)
+    { input = CA.conduitParser A.json =$= awaitForever (yieldObj . fromJSON . snd)
     , output = CL.map (flip B.append "\n" . B.concat . BL.toChunks . BL.intercalate " " . map encode)
     }
   where

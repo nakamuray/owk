@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Owk.Type
-    ( Owk(..)
+    ( Owk
     , Object(..)
     , Function
     , ControlFlow(..)
@@ -34,7 +34,6 @@ module Owk.Type
 
 import Data.Conduit
 
-import Control.Applicative ((<$>))
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TVar (TVar, newTVarIO, readTVar, writeTVar)
 import Control.Monad.Error (Error, ErrorT, MonadError, throwError, runErrorT)
@@ -44,7 +43,6 @@ import Data.Attoparsec.Number (Number(..))
 import Data.Text (Text)
 import Data.Vector (Vector)
 
-import qualified Data.Text as T
 import qualified Data.HashMap.Strict as H
 import qualified Data.Vector as V
 
@@ -107,7 +105,7 @@ instance Ord Object where
     String o1 `compare` String o2 = o1 `compare` o2
     List o1 `compare` List o2 = o1 `compare` o2
     Function _ _ `compare` Function _ _ = error "not implemented: how to compare function?"
-    Dict o1 `compare` Dict o2 = error "not implemented: how to compare dicts?"
+    Dict _ `compare` Dict _ = error "not implemented: how to compare dicts?"
     Number o1 `compare` Number o2 = o1 `compare` o2
     Bool o1 `compare` Bool o2 = o1 `compare` o2
     Unit `compare` Unit = EQ
