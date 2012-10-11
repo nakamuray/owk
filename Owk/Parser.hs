@@ -113,7 +113,7 @@ unit = symbol "(" >> symbol ")" >> return Unit
 function :: Parser Expression
 function = do
     params <- funcParams
-    es <- braces $ expression `sepEndBy` semicolon
+    es <- braces $ expression `sepEndBy1` semicolon
     return $ Function params es
   <?> "function"
 
