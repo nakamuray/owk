@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE Rank2Types #-}
 module Owk.Interpreter where
 
 import Control.Applicative ((<$>))
