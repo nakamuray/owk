@@ -134,7 +134,7 @@ __not__ obj =
     in Bool (not b)
 
 __and__ :: Object -> Object -> Object
-__and__ left right | isTrue left && isTrue right = right
+__and__ left right | isTrue left = right
 __and__ left _ = left
 
 __or__ :: Object -> Object -> Object
