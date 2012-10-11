@@ -6,7 +6,6 @@ import qualified Prelude
 
 import Control.Applicative ((<$>))
 import Control.Monad.Error (catchError)
-import Data.Attoparsec.Number (Number(..))
 import Data.Maybe (isJust)
 import Data.Monoid ((<>))
 import Data.Text.ICU (regex', find)
