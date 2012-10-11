@@ -15,12 +15,12 @@ import Control.Concurrent.STM (STM, atomically)
 import Control.Concurrent.STM.TVar (newTVarIO, readTVar, writeTVar)
 import Control.Monad.Reader (ask, asks)
 import Data.Maybe (isJust)
+import Data.Monoid ((<>))
 import Data.Text (Text)
 
 import qualified Data.HashMap.Strict as H
 
 import Owk.Type (Namespace, Scope(..))
-import Owk.Util
 
 import Owk.Type as Type
 
@@ -45,7 +45,7 @@ define n v = do
             return $ Just v
     case ret of
         Just v'  -> return v'
-        Nothing -> exception $ Type.String $ "name `" ++. n ++. "` is already defined"
+        Nothing -> exception $ Type.String $ "name `" <> n <> "` is already defined"
 
 currentNamepace :: Scope -> Namespace
 currentNamepace (Global n) = n

@@ -6,6 +6,7 @@ import Control.Applicative ((<$>))
 import Control.Monad (foldM)
 import Control.Monad.Error (MonadError, catchError)
 import Control.Monad.Reader (MonadReader, ask, local)
+import Data.Monoid ((<>))
 
 import qualified Data.HashMap.Strict as H
 import qualified Data.Vector as V
@@ -48,7 +49,7 @@ funcCall (Type.Function s f) args = do
     s' <- liftIO $ Namespace.create s
     local (const s') $ catchReturn $ f args
 funcCall (Type.Ref r) _ = readRef r
-funcCall obj _ = exception $ Type.String $ "not a function: " ++. showText obj
+funcCall obj _ = exception $ Type.String $ "not a function: " <> showText obj
 
 catchReturn :: Owk Object -> Owk Object
 catchReturn owk = owk `catchError` catcher

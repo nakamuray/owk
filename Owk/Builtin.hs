@@ -8,6 +8,7 @@ import Control.Applicative ((<$>))
 import Control.Monad.Error (catchError)
 import Data.Attoparsec.Number (Number(..))
 import Data.Maybe (isJust)
+import Data.Monoid ((<>))
 import Data.Text.ICU (regex', find)
 
 import qualified Data.HashMap.Strict as H
@@ -81,7 +82,7 @@ sort (List v) = do
     return $ List v'
 sort d@(Dict _) = sort (list d)
 sort Unit = sort (list Unit)
-sort obj = exception $ String $ "sort: not a List: " ++. showText obj
+sort obj = exception $ String $ "sort: not a List: " <> showText obj
 
 
 -- operators
@@ -90,7 +91,7 @@ __add__ = numop (+)
 
 __app__ :: Function
 __app__ (func@(Function _ _):args) = funcCall func args
-__app__ (obj:_) = exception $ String $ "not a function " ++. showText obj
+__app__ (obj:_) = exception $ String $ "not a function " <> showText obj
 __app__ [] = error "should not be reached"
 
 __div__ :: Function
@@ -101,7 +102,7 @@ __mul__ = numop (*)
 
 __neg__ :: Object -> Owk Object
 __neg__ (Number n) = return $ Number $ -n
-__neg__ obj = exception $ String $ "not a number: " ++. showText obj
+__neg__ obj = exception $ String $ "not a number: " <> showText obj
 
 __sub__ :: Function
 __sub__ = numop (flip subtract)
@@ -146,7 +147,7 @@ __get__ :: Function
 __get__ (Unit:_) = return Unit
 __get__ (Dict h:String name:names@(String _:_)) = __get__ $ H.lookupDefault Unit name h : names
 __get__ (Dict h:String name:_) = return $ H.lookupDefault Unit name h
-__get__ (obj:_) = exception $ String $ "__get__: not a Dict: " ++. showText obj
+__get__ (obj:_) = exception $ String $ "__get__: not a Dict: " <> showText obj
 __get__  [] = error "should not be reached"
 
 __if__ :: Object -> Object -> Owk Object
@@ -158,16 +159,16 @@ __if__ b block =
 
 __wref__ :: Object -> Object -> Owk Object
 __wref__ (Ref r) obj = writeRef r obj >> return obj
-__wref__ obj _ = exception $ String $ "__wref__: not a Ref: " ++. showText obj
+__wref__ obj _ = exception $ String $ "__wref__: not a Ref: " <> showText obj
 
 __match__ :: Object -> Object -> Owk Object
 __match__ (String t) (String pat) =
     case regex' [] pat of
-        Left e  -> exception $ String $ "__match__: parse error: " ++. showText e
+        Left e  -> exception $ String $ "__match__: parse error: " <> showText e
         Right r -> return $ Bool $ isJust $ find r t
 __match__ Unit pat = __match__ (str Unit) pat
-__match__ (String _) obj = exception $ String $ "__match__: not a String: " ++. showText obj
-__match__ obj _ = exception $ String $ "__match__: not a String: " ++. showText obj
+__match__ (String _) obj = exception $ String $ "__match__: not a String: " <> showText obj
+__match__ obj _ = exception $ String $ "__match__: not a String: " <> showText obj
 
 __nmatch__ :: Object -> Object -> Owk Object
 __nmatch__ t pat = do
@@ -233,8 +234,8 @@ numop :: (Number -> Number -> Number) -> Function
 numop op (Number l:Number r:_) = return $ Number $ l `op` r
 numop op (n@(Number _):Unit:_) = numop op [n, num Unit]
 numop op (Unit:n@(Number _):_) = numop op [num Unit, n]
-numop _ (Number _:obj) = exception $ String $ "not a number: " ++. showText obj
-numop _ (obj:_) = exception $ String $ "not a number: " ++. showText obj
+numop _ (Number _:obj) = exception $ String $ "not a number: " <> showText obj
+numop _ (obj:_) = exception $ String $ "not a number: " <> showText obj
 numop _ [] = error "should not be reached"
 
 mkOp :: (Object -> Object -> Object) -> Function
