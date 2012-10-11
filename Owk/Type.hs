@@ -97,8 +97,7 @@ instance Eq Object where
     Function _ _ == _ = error "not implemented: how to compare function?"
     _ == Function _ _ = error "not implemented: how to compare function?"
     -- XXX: how to compare Ref without IO?
-    Ref _ == _ = error "not implemented: how to comare ref?"
-    _ == Ref _ = error "not implemented: how to comare ref?"
+    Ref _ == Ref _ = error "not implemented: how to comare ref?"
     _ == _ = False
 
 instance Ord Object where
