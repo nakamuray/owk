@@ -30,6 +30,7 @@ module Owk.Type
     , module Control.Monad.Error
     , module Control.Monad.Reader
     , module Control.Monad.Trans
+    , module Data.Attoparsec.Number
     ) where
 
 import Data.Conduit
