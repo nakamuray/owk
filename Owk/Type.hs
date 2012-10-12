@@ -17,6 +17,7 @@ module Owk.Type
     , dict
     , list
     , str
+    , str'
     , num
     , bool
 
@@ -40,11 +41,14 @@ import Control.Concurrent.STM.TVar (TVar, newTVarIO, readTVar, writeTVar)
 import Control.Monad.Error (Error, ErrorT, MonadError, throwError, runErrorT)
 import Control.Monad.Reader (MonadReader, ReaderT(..), runReaderT)
 import Control.Monad.Trans (MonadIO, MonadTrans, lift, liftIO)
+import Data.Aeson (encode)
 import Data.Attoparsec.Number (Number(..))
+import Data.Monoid ((<>))
 import Data.Text (Text)
 import Data.Vector (Vector)
 
 import qualified Data.HashMap.Strict as H
+import qualified Data.Text as T
 import qualified Data.Vector as V
 
 import Owk.Util
@@ -211,7 +215,22 @@ str (Number n) = String $ showText n
 str (Bool True) = String "true"
 str (Bool False) = String "false"
 str Unit = String ""
+str o@(List _) = String $ str' o
+str o@(Dict _) = String $ str' o
 str o = error $ "str: not implemented: " ++ show o
+
+str' :: Object -> Text
+str' (String t) = lb2text $ encode t
+str' (Number n) = showText n
+str' (Bool True) = "true"
+str' (Bool False) = "false"
+str' Unit = ""
+str' (Ref _) = "ref"
+str' (Function _ _) = "function"
+str' (List v) = "[" <> T.intercalate ", " (map str' $ V.toList v) <> "]"
+str' (Dict h) = "{" <> T.intercalate ", " (map toKV $ H.toList h) <> "}"
+  where
+    toKV (k, v) = k <> " => " <> str' v
 
 num :: Object -> Object
 num (Dict h) = Number $ I $ toInteger $ H.size h
