@@ -29,7 +29,11 @@ parseOwkFile fp = do
     return $ parseOwk fp s
 
 program :: Parser Program
-program = Program <$> (whiteSpace *> expression `sepEndBy` semicolon <* eof <?> "owk program")
+program = Program <$> block <* eof
+
+block, block1 :: Parser [Expression]
+block = blankLines *> whiteSpace *> expression `sepEndBy` ((semicolon <|> symbol "\n") <* blankLines <* whiteSpace)
+block1 = blankLines *> whiteSpace *> expression `sepEndBy1` ((semicolon <|> symbol "\n") <* blankLines <* whiteSpace)
 
 expression :: Parser Expression
 expression = buildExpressionParser table term
@@ -53,13 +57,19 @@ lexeme :: Parser a -> Parser a
 lexeme p = p <* whiteSpace
 
 whiteSpace :: Parser ()
-whiteSpace = skipMany (simpleSpaces <|> oneLineComment <?> "white spaces")
+whiteSpace = skipMany (simpleSpaces <|> newlineFollowingBackspace <|> oneLineComment <?> "white spaces")
   where
-    simpleSpaces = oneOf " \t\r\n" >> return ()
+    simpleSpaces = oneOf " \t\r" >> return ()
+    newlineFollowingBackspace = string "\\\n" >> return ()
     oneLineComment = do
         try (string "#")
         skipMany (satisfy (/= '\n'))
         return ()
+
+blankLines :: Parser ()
+blankLines = do
+    many $ try (whiteSpace >> newline)
+    return ()
 
 
 table :: OperatorTable T.Text () Identity Expression
@@ -113,7 +123,7 @@ unit = symbol "(" >> symbol ")" >> return Unit
 function :: Parser Expression
 function = do
     params <- funcParams
-    es <- braces $ expression `sepEndBy1` semicolon
+    es <- braces block1
     return $ Function params es
   <?> "function"
 
