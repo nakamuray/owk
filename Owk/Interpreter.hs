@@ -58,6 +58,8 @@ funcCall (Type.List v) [Type.Number (I i), Type.Number (I j)] = return $ Type.Li
     count = min (len - start) $ fromInteger j
 funcCall obj@(Type.List _) [Type.List v] = funcCall obj $ V.toList v
 funcCall (Type.List _) _ = exception $ Type.String $ "list only accept 1 or 2 numbers"
+funcCall (Type.Dict h) [Type.Dict i] = return $ Type.Dict $ H.union i h
+funcCall (Type.Dict _) _ = exception $ Type.String $ "dict only accept 1 other dict"
 funcCall obj _ = exception $ Type.String $ "not a function: " <> showText obj
 
 catchReturn :: Owk Object -> Owk Object
