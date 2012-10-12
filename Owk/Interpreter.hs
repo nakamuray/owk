@@ -48,6 +48,16 @@ funcCall (Type.Function s f) args = do
     s' <- liftIO $ Namespace.create s
     local (const s') $ catchReturn $ f args
 funcCall (Type.Ref r) _ = readRef r
+funcCall (Type.List v) [Type.Number (I i)]
+    | fromInteger i < V.length v = return $ v V.! (fromInteger i)
+    | otherwise = return Type.Unit
+funcCall (Type.List v) [Type.Number (I i), Type.Number (I j)] = return $ Type.List $ V.slice start count v
+  where
+    len = V.length v
+    start = max 0 $ min len $ fromInteger i
+    count = min (len - start) $ fromInteger j
+funcCall obj@(Type.List _) [Type.List v] = funcCall obj $ V.toList v
+funcCall (Type.List _) _ = exception $ Type.String $ "list only accept 1 or 2 numbers"
 funcCall obj _ = exception $ Type.String $ "not a function: " <> showText obj
 
 catchReturn :: Owk Object -> Owk Object
