@@ -19,6 +19,7 @@ import Owk.AST as AST
 import Owk.Builtin (builtins)
 import Owk.Interpreter
 import Owk.IO.Type
+import qualified Owk.IO.ApacheLog as ApacheLog
 import qualified Owk.IO.Line as Line
 import qualified Owk.IO.JSON as JSON
 import qualified Owk.Namespace as Namespace
@@ -79,6 +80,7 @@ iopipes :: [(String, IOPipe)]
 iopipes =
   [ ("line", Line.iopipe)
   , ("json", JSON.iopipe)
+  , ("apachelog", ApacheLog.iopipe)
   ]
 
 usage :: String
@@ -95,6 +97,7 @@ usage = unlines
     , ""
     , "TYPE: line (default)"
     , "      json"
+    , "      apachelog"
     ]
 
 pprint :: Show a => a -> IO ()
