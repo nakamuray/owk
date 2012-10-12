@@ -188,11 +188,12 @@ toChar = toEnum . fromEnum
 
 
 -- XXX: copied from json-0.7:Text.JSON.Parsec
-tok              :: Parser a -> Parser a
-tok p             = p <* spaces
+--tok              :: Parser a -> Parser a
+--tok p             = p <* spaces
 
 p_string         :: Parser String
-p_string          = between (tok (char '"')) (tok (char '"')) (many p_char)
+--p_string          = between (tok (char '"')) (tok (char '"')) (many p_char)
+p_string          = between (char '"') (char '"') (many p_char)
   where p_char    =  (char '\\' >> p_esc)
                  <|> (satisfy (\x -> x /= '"' && x /= '\\'))
 

@@ -61,3 +61,4 @@ case_newline_8 = parseOwk "<test>" "{ 1; 2 3 }" @=? parseOwk "<test>" "{ 1\n2 \\
 case_newline_9 = parseOwk "<test>" "{ 1; 2; 3 }" @=? parseOwk "<test>" "{ 1;\n2;\n3\n}"
 
 case_newline_10 = parseOwk "<test>" "1;2;3" @=? parseOwk "<test>" " 1;\n  2;\n  3\n"
+case_newline_11 = parseOwk "<test>" "\"x\";\"y\";\"z\"" @=? parseOwk "<test>" "\"x\"\n\"y\"\n\"z\"\n"
