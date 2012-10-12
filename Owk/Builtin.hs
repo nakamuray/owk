@@ -58,6 +58,8 @@ builtins =
 
     -- controls
     , ("if", builtin if_)
+    , ("then", builtin then_)
+    , ("else", builtin else_)
     , ("for", builtin for)
     , ("while", builtin while)
 
@@ -176,14 +178,27 @@ __nmatch__ t pat = do
 
 
 -- controls
--- TODO: else
-if_ :: Function
-if_ (b:_) = return . Function Builtin $ \(block:_) ->
-    case bool b of
-        Bool True  -> funcCall block []
-        Bool False -> return Unit
-        _          -> error "bool should return Bool only"
+-- if .. then .. else
+-- use these like::
+-- if (true): then {
+--   print "true"
+-- }: else {
+--   print "false"
+-- }
+if_, then_, else_ :: Function
+if_ (b:_) = return . Function Builtin $ \(thenElseBlock:_) -> funcCall thenElseBlock [b]
 if_ [] = error "should not be reached"
+
+then_ (block:_) = return . Function Builtin $ \(elseBlock:_) ->
+    return . Function Builtin $ \(b:_) ->
+        case bool b of
+            Bool True  -> funcCall block []
+            Bool False -> funcCall elseBlock []
+            _          -> error "bool should return Bool only"
+then_ [] = error "should not be reached"
+
+else_ (block:_) = return block
+else_ [] = error "should not be reached"
 
 for :: Function
 for (List v:_) = return . Function Builtin $ \(block:_) -> V.foldM (\_ obj -> funcCall block [obj]) Unit v
