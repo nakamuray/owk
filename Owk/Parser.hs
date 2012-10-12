@@ -49,7 +49,6 @@ brackets p = between (symbol "[") (symbol "]") p
 comma, colon, semicolon, dot :: Parser String
 comma      = symbol ","
 colon      = symbol ":"
---semicolon :: Parser T.Text
 semicolon = symbol ";"
 dot        = symbol "."
 
