@@ -233,13 +233,14 @@ numop :: (Number -> Number -> Number) -> Function
 numop op (Number l:Number r:_) = return $ Number $ l `op` r
 numop op (n@(Number _):Unit:_) = numop op [n, num Unit]
 numop op (Unit:n@(Number _):_) = numop op [num Unit, n]
+numop op (n@(Number _):[]) = numop op [n, num Unit]
 numop _ (Number _:obj) = exception $ String $ "not a number: " <> showText obj
 numop _ (obj:_) = exception $ String $ "not a number: " <> showText obj
 numop _ [] = error "should not be reached"
 
 mkOp :: (Object -> Object -> Object) -> Function
 mkOp op (left:right:_) = return $ op left right
-mkOp _ [_] = error "should not be reached"
+mkOp op [left] = mkOp op [left, Unit]
 mkOp _ [] = error "should not be reached"
 
 mkCmp :: (Object -> Object -> Bool) -> Function
@@ -261,7 +262,15 @@ builtin1M :: (Object -> Owk Object) -> Object
 builtin1M f = Function Builtin $ \(arg:_) -> f arg
 
 builtin2 :: (Object -> Object -> Object) -> Object
-builtin2 f = Function Builtin $ \(arg1:arg2:_) -> return $ f arg1 arg2
+builtin2 f = Function Builtin go
+  where
+    go (arg1:arg2:_) = return $ f arg1 arg2
+    go [arg1] = return $ f arg1 Unit
+    go [] = error "should no be reached"
 
 builtin2M :: (Object -> Object -> Owk Object) -> Object
-builtin2M f = Function Builtin $ \(arg1:arg2:_) -> f arg1 arg2
+builtin2M f = Function Builtin go
+  where
+    go (arg1:arg2:_) = f arg1 arg2
+    go [arg1] = f arg1 Unit
+    go [] = error "should no be reached"
