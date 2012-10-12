@@ -15,6 +15,9 @@ import Owk.Parser
 
 tests = $(testGroupGenerator)
 
+case_empty_0 = parseOwk "<test>" "" @?= Right (Program [])
+case_empty_1 = parseOwk "<test>" "\n\n" @?= Right (Program [])
+case_empty_2 = parseOwk "<test>" "# comment only" @?= Right (Program [])
 
 case_unit_0 = parseOwk "<test>" "()" @?= Right (Program [Unit])
 
@@ -40,5 +43,21 @@ case_function_2 = parseOwk "<test>" "x, y -> { 1 }" @?= Right (Program [Function
 case_variable_0 = parseOwk "<test>" "x" @?= Right (Program [Variable "x"])
 
 case_define_0 = parseOwk "<test>" "x = 42" @?= Right (Program [Define "x" (Number (I 42))])
+case_define_1 = parseOwk "<test>" "x = { 42 }" @?= Right (Program [Define "x" (Function [] [(Number (I 42))])])
+case_define_2 = parseOwk "<test>" "x = $ -> { 42 }" @?= Right (Program [Define "x" (Function ["$"] [(Number (I 42))])])
 
 case_operator_0 = parseOwk "<test>" "1 + 2" @?= Right (Program [FuncCall (Variable "__add__") [Number (I 1), Number (I 2)]])
+
+case_newline_0 = parseOwk "<test>" "1; 2; 3" @=? parseOwk "<test>" "1\n2\n3\n"
+case_newline_1 = parseOwk "<test>" "1; 2; 3" @=? parseOwk "<test>" "1\n\n2\n\n3\n"
+case_newline_2 = parseOwk "<test>" "1; 2 3" @=? parseOwk "<test>" "1\n2\\\n3\n"
+case_newline_3 = parseOwk "<test>" "1; 2 3" @=? parseOwk "<test>" "1\n2 \\\n 3\n"
+case_newline_4 = parseOwk "<test>" "1; 2; 3" @=? parseOwk "<test>" "1;\n2;\n3\n"
+
+case_newline_5 = parseOwk "<test>" "{ 1; 2; 3 }" @=? parseOwk "<test>" "{ 1\n2\n3\n}"
+case_newline_6 = parseOwk "<test>" "{ 1; 2; 3 }" @=? parseOwk "<test>" "{ 1\n\n2\n\n3\n}"
+case_newline_7 = parseOwk "<test>" "{ 1; 2 3 }" @=? parseOwk "<test>" "{ 1\n2\\\n3\n}"
+case_newline_8 = parseOwk "<test>" "{ 1; 2 3 }" @=? parseOwk "<test>" "{ 1\n2 \\\n 3\n}"
+case_newline_9 = parseOwk "<test>" "{ 1; 2; 3 }" @=? parseOwk "<test>" "{ 1;\n2;\n3\n}"
+
+case_newline_10 = parseOwk "<test>" "1;2;3" @=? parseOwk "<test>" " 1;\n  2;\n  3\n"
