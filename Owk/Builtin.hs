@@ -91,8 +91,7 @@ __add__ :: Function
 __add__ = numop (+)
 
 __app__ :: Function
-__app__ (func@(Function _ _):args) = funcCall func args
-__app__ (obj:_) = exception $ String $ "not a function " <> showText obj
+__app__ (obj:args) = funcCall obj args
 __app__ [] = error "should not be reached"
 
 __div__ :: Function
