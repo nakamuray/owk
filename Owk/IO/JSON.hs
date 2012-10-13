@@ -3,8 +3,9 @@ module Owk.IO.JSON where
 
 import Data.Conduit
 
-import Control.Applicative ((<$>))
+import Control.Applicative ((<$>), (<*))
 import Data.Aeson as A
+import Data.Attoparsec.ByteString.Char8 (skipSpace)
 import System.IO (hPutStrLn, stderr)
 
 import qualified Data.Conduit.Attoparsec as CA
@@ -19,10 +20,12 @@ import Owk.Type as O
 
 iopipe :: IOPipe
 iopipe = IOPipe
-    { input = CA.conduitParser A.json =$= awaitForever (yieldObj . fromJSON . snd)
+    { input = CA.conduitParser jsonS =$= awaitForever (yieldObj . fromJSON . snd)
     , output = CL.map (flip B.append "\n" . B.concat . BL.toChunks . BL.intercalate " " . map encode)
     }
   where
+    jsonS = A.json <* skipSpace
+
     yieldObj (A.Error e)            = liftIO $ hPutStrLn stderr e
     yieldObj (A.Success (O.List v)) = V.mapM_ yield v
     yieldObj (A.Success obj)        = yield obj
