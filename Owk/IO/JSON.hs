@@ -3,9 +3,9 @@ module Owk.IO.JSON where
 
 import Data.Conduit
 
-import Control.Applicative ((<$>), (<*))
+import Control.Applicative ((<$), (<$>), (<|>))
 import Data.Aeson as A
-import Data.Attoparsec.ByteString.Char8 (skipSpace)
+import Data.Attoparsec.ByteString.Char8 (endOfInput, skipSpace)
 import System.IO (hPutStrLn, stderr)
 
 import qualified Data.Conduit.Attoparsec as CA
@@ -20,15 +20,16 @@ import Owk.Type as O
 
 iopipe :: IOPipe
 iopipe = IOPipe
-    { input = CA.conduitParser jsonS =$= awaitForever (yieldObj . fromJSON . snd)
+    { input = CA.conduitParser jsonOrEmpty =$= awaitForever (yieldObj . fmap fromJSON . snd)
     , output = CL.map (flip B.append "\n" . B.concat . BL.toChunks . BL.intercalate " " . map encode)
     }
   where
-    jsonS = A.json <* skipSpace
+    jsonOrEmpty = (Just <$> A.json) <|> (Nothing <$ (skipSpace >> endOfInput))
 
-    yieldObj (A.Error e)            = liftIO $ hPutStrLn stderr e
-    yieldObj (A.Success (O.List v)) = V.mapM_ yield v
-    yieldObj (A.Success obj)        = yield obj
+    yieldObj (Just (A.Error e))            = liftIO $ hPutStrLn stderr e
+    yieldObj (Just (A.Success (O.List v))) = V.mapM_ yield v
+    yieldObj (Just (A.Success obj))        = yield obj
+    yieldObj Nothing                       = return ()
 
 instance FromJSON O.Object where
     -- XXX: 何かきれいに書ける方法がありそうな気がしている
