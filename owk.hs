@@ -4,27 +4,20 @@ module Main where
 import Data.Conduit
 
 import Control.Applicative ((<$>))
-import Control.Monad.Error (catchError)
 import System.Environment (getArgs)
-import System.IO (BufferMode(LineBuffering), hPutStrLn, hSetBuffering, stderr, stdin, stdout)
-import System.Exit (ExitCode(..), exitFailure, exitSuccess, exitWith)
+import System.IO (BufferMode(LineBuffering), hSetBuffering, stdin, stdout)
 import Text.Show.Pretty (ppShow)
 
 import qualified Data.Conduit.Binary as CB
-import qualified Data.Conduit.List as CL
 import qualified Data.Text as T
 import qualified Data.Text.IO as TI
 
-import Owk.AST as AST
-import Owk.Builtin (builtins)
-import Owk.Interpreter
+import Data.Conduit.Owk
 import Owk.IO.Type
 import qualified Owk.IO.ApacheLog as ApacheLog
 import qualified Owk.IO.Line as Line
 import qualified Owk.IO.JSON as JSON
-import qualified Owk.Namespace as Namespace
 import Owk.Parser
-import Owk.Type as Type
 
 
 main :: IO ()
@@ -41,40 +34,13 @@ run :: Config -> IO ()
 run (Config _ _ em fname script i o) = do
     script' <- script
     hSetBuffering stdout LineBuffering
-    n <- Namespace.fromList builtins
-    case parseOwk fname script' of
-        Left e     -> hPutStrLn stderr e >> exitFailure
-        Right prog -> do
-            let prog' = if em then AST.Program $ [AST.Define "main" $ AST.Function ["$"] $ unProg prog]
-                              else prog
-                source = CB.sourceHandle stdin $= i
-                sink = o =$ CB.sinkHandle stdout
-            -- update global namespace
-            (cont, _) <- source $$+ runOwk (interpret_ prog' `catchError` catchExit) n =$ sink
-            mmain <- Namespace.lookupIO "main" $ Type.Global n
-            case mmain of
-                Nothing    -> error "no `main` found"
-                Just owkMain -> do
-                    -- and then, run `main` function
-                    let owkMain' = awaitForever $ \obj -> do
-                            runOwk (funcCall owkMain [obj] `catchError` ignoreNext `catchError` catchExit >> return ()) n
-                            return ()
-                    cont $$++ owkMain' =$ sink
-                    mend <- Namespace.lookupIO "end" $ Type.Global n
-                    case mend of
-                        Just end -> do
-                            CL.sourceNull $= runOwk (funcCall end [] `catchError` ignoreNext `catchError` catchExit >> return ()) n $$ sink
-                            return ()
-                        Nothing  -> return ()
-  where
-    unProg (Program es) = es
+    let source = CB.sourceHandle stdin $= i
+        sink = o =$ CB.sinkHandle stdout
 
-    ignoreNext Next = return Type.Unit
-    ignoreNext e    = throwError e
+        owk' = if em then owkMain fname script'
+                     else owk fname script'
+    source $= owk' $$ sink
 
-    catchExit (Exit 0) = liftIO exitSuccess
-    catchExit (Exit c) = liftIO $ exitWith $ ExitFailure c
-    catchExit e        = throwError e
 
 iopipes :: [(String, IOPipe)]
 iopipes =
