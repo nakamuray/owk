@@ -19,7 +19,7 @@ case_empty_0 = parseOwk "<test>" "" @?= Right (Program [])
 case_empty_1 = parseOwk "<test>" "\n\n" @?= Right (Program [])
 case_empty_2 = parseOwk "<test>" "# comment only" @?= Right (Program [])
 
-case_unit_0 = parseOwk "<test>" "()" @?= Right (Program [Unit])
+case_unit_0 = parseOwk "<test>" "()" @?= Right (Program [Undef])
 
 case_string_0 = parseOwk "<test>" "\"hello world\"" @?= Right (Program [String "hello world"])
 case_string_1 = parseOwk "<test>" "\"\\u3042\"" @?= Right (Program [String "あ"])

@@ -42,7 +42,7 @@ case_list_2 = testOwk_ $ do
     y <- funcCall (Type.List $ V.fromList [Type.String "x", Type.String "y", Type.String "z"]) [Type.Number $ I 1]
     liftIO $ y @?= Type.String "y"
     u <- funcCall (Type.List $ V.fromList [Type.String "x", Type.String "y", Type.String "z"]) [Type.Number $ I 10]
-    liftIO $ u @?= Type.Unit
+    liftIO $ u @?= Type.Undef
 
 case_list_3 = testOwk_ $ do
     x <- funcCall (Type.List $ V.fromList [Type.String "x", Type.String "y", Type.String "z"]) [Type.List (V.fromList [Type.Number $ I 0])]

@@ -78,7 +78,7 @@ data Object = Dict (H.HashMap Text Object)
             | Bool !Bool
             | Function Scope Function
             | Ref Ref
-            | Unit
+            | Undef
 
 instance Show Object where
     show (Dict o)     = "Dict " ++ show o
@@ -86,7 +86,7 @@ instance Show Object where
     show (String o)   = "String " ++ show o
     show (Number o)   = "Number " ++ show o
     show (Bool o)     = "Bool " ++ show o
-    show Unit         = "Unit"
+    show Undef         = "Undef"
     show (Ref _)      = "Ref"
     show (Function _ _) = "Function"
 
@@ -96,7 +96,7 @@ instance Eq Object where
     String o1 == String o2 = o1 == o2
     Number o1 == Number o2 = o1 == o2
     Bool o1 == Bool o2 = o1 == o2
-    Unit == Unit = True
+    Undef == Undef = True
     -- XXX: how to compare Functions?
     Function _ _ == _ = error "not implemented: how to compare function?"
     _ == Function _ _ = error "not implemented: how to compare function?"
@@ -112,7 +112,7 @@ instance Ord Object where
     Dict _ `compare` Dict _ = error "not implemented: how to compare dicts?"
     Number o1 `compare` Number o2 = o1 `compare` o2
     Bool o1 `compare` Bool o2 = o1 `compare` o2
-    Unit `compare` Unit = EQ
+    Undef `compare` Undef = EQ
 
     Ref _ `compare` String _ = GT
     Ref _ `compare` List _ = GT
@@ -120,7 +120,7 @@ instance Ord Object where
     Ref _ `compare` Dict _ = GT
     Ref _ `compare` Number _ = GT
     Ref _ `compare` Bool _ = GT
-    Ref _ `compare` Unit = GT
+    Ref _ `compare` Undef = GT
 
     String _ `compare` Ref _ = LT
     String _ `compare` List _ = GT
@@ -128,7 +128,7 @@ instance Ord Object where
     String _ `compare` Dict _ = GT
     String _ `compare` Number _ = GT
     String _ `compare` Bool _ = GT
-    String _ `compare` Unit = GT
+    String _ `compare` Undef = GT
 
     List _ `compare` Ref _ = LT
     List _ `compare` String _ = LT
@@ -136,7 +136,7 @@ instance Ord Object where
     List _ `compare` Dict _ = GT
     List _ `compare` Number _ = GT
     List _ `compare` Bool _ = GT
-    List _ `compare` Unit = GT
+    List _ `compare` Undef = GT
 
     Function _ _ `compare` Ref _ = LT
     Function _ _ `compare` String _ = LT
@@ -144,7 +144,7 @@ instance Ord Object where
     Function _ _ `compare` Dict _ = GT
     Function _ _ `compare` Number _ = GT
     Function _ _ `compare` Bool _ = GT
-    Function _ _ `compare` Unit = GT
+    Function _ _ `compare` Undef = GT
 
     Dict _ `compare` Ref _ = LT
     Dict _ `compare` String _ = LT
@@ -152,7 +152,7 @@ instance Ord Object where
     Dict _ `compare` List _ = LT
     Dict _ `compare` Number _ = GT
     Dict _ `compare` Bool _ = GT
-    Dict _ `compare` Unit = GT
+    Dict _ `compare` Undef = GT
 
     Number _ `compare` Ref _ = LT
     Number _ `compare` String _ = LT
@@ -160,7 +160,7 @@ instance Ord Object where
     Number _ `compare` List _ = LT
     Number _ `compare` Dict _ = LT
     Number _ `compare` Bool _ = GT
-    Number _ `compare` Unit = GT
+    Number _ `compare` Undef = GT
 
     Bool _ `compare` Ref _ = LT
     Bool _ `compare` String _ = LT
@@ -168,15 +168,15 @@ instance Ord Object where
     Bool _ `compare` List _ = LT
     Bool _ `compare` Dict _ = LT
     Bool _ `compare` Number _ = LT
-    Bool _ `compare` Unit = GT
+    Bool _ `compare` Undef = GT
 
-    Unit `compare` Ref _ = LT
-    Unit `compare` String _ = LT
-    Unit `compare` Function _ _ = LT
-    Unit `compare` List _ = LT
-    Unit `compare` Dict _ = LT
-    Unit `compare` Number _ = LT
-    Unit `compare` Bool _ = LT
+    Undef `compare` Ref _ = LT
+    Undef `compare` String _ = LT
+    Undef `compare` Function _ _ = LT
+    Undef `compare` List _ = LT
+    Undef `compare` Dict _ = LT
+    Undef `compare` Number _ = LT
+    Undef `compare` Bool _ = LT
 
 type Function = [Object] -> Owk Object
 type Ref = TVar Object
@@ -200,13 +200,13 @@ next = throwError Next
 
 dict :: Object -> Object
 dict o@(Dict _) = o
-dict Unit = Dict H.empty
+dict Undef = Dict H.empty
 dict _ = undefined
 
 list :: Object -> Object
 list o@(List _) = o
 list (Dict h) = List $ V.fromList $ map String $ H.keys h
-list Unit = List V.empty
+list Undef = List V.empty
 list _ = undefined
 
 str :: Object -> Object
@@ -214,7 +214,7 @@ str o@(String _) = o
 str (Number n) = String $ showText n
 str (Bool True) = String "true"
 str (Bool False) = String "false"
-str Unit = String ""
+str Undef = String ""
 str o@(List _) = String $ str' o
 str o@(Dict _) = String $ str' o
 str o = error $ "str: not implemented: " ++ show o
@@ -224,7 +224,7 @@ str' (String t) = lb2text $ encode t
 str' (Number n) = showText n
 str' (Bool True) = "true"
 str' (Bool False) = "false"
-str' Unit = ""
+str' Undef = ""
 str' (Ref _) = "ref"
 str' (Function _ _) = "function"
 str' (List v) = "[" <> T.intercalate ", " (map str' $ V.toList v) <> "]"
@@ -239,12 +239,12 @@ num o@(Number _) = o
 num (String t) = Number $ maybe (I 0) id $ parseNumber t
 num (Bool True) = Number $ I 1
 num (Bool False) = Number $ I 0
-num Unit = Number $ I 0
+num Undef = Number $ I 0
 num _ = error "num: not implemented"
 
 bool :: Object -> Object
 bool o@(Bool _) = o
-bool Unit = Bool False
+bool Undef = Bool False
 bool _ = Bool True
 
 

@@ -80,7 +80,7 @@ conduitOwkProgram prog = do
                     return ()
                 Nothing  -> return ()
   where
-    ignoreNext Next = return Unit
+    ignoreNext Next = return Undef
     ignoreNext e    = throwError e
 
     -- TODO: don't exit inside conduit

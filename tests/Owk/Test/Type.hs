@@ -26,14 +26,14 @@ case_bool_5 = bool (Number $ I 0) @=? Bool True
 case_bool_6 = bool (Number $ I 1) @=? Bool True
 case_bool_7 = bool (Dict H.empty) @=? Bool True
 case_bool_8 = bool (List V.empty) @=? Bool True
-case_bool_9 = bool Unit @=? Bool False
+case_bool_9 = bool Undef @=? Bool False
 
 case_list_0 = let orig = List $ V.fromList [String "x", String "y", String "z"]
               in list orig @=? orig
-case_list_1 = list Unit @=? List V.empty
+case_list_1 = list Undef @=? List V.empty
 case_list_2 = list (Dict $ H.fromList [("key1", String "x"), ("key2", String "y"), ("key3", String "z")])
                 @=? (List $ V.fromList [String "key2", String "key3", String "key1"])
 
-_types = [Ref undefined, String "", List V.empty, Dict H.empty, Number (I 0), Bool True, Unit]
+_types = [Ref undefined, String "", List V.empty, Dict H.empty, Number (I 0), Bool True, Undef]
 case_eq_0 = assertBool "each type should no equal" $ and [x /= y | (x, y) <- zip _types $ tail _types]
 case_ord_0 = assertBool "type ordering" $ and [x > y | (x, y) <- zip _types $ tail _types]

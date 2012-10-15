@@ -63,7 +63,7 @@ lookup n = do
     mo <- liftIO $ atomically $ lookup' n s
     case mo of
         Just o  -> return o
-        Nothing -> return Type.Unit
+        Nothing -> return Type.Undef
 
 lookupIO :: Text -> Scope -> IO (Maybe Object)
 lookupIO n s = atomically $ lookup' n s

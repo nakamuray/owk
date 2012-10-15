@@ -108,15 +108,15 @@ term = flip label "term" $ lexeme $ do
 
 term' :: Parser Expression
 term' = flip label "expressions without function call" $ do
-    e <- tryAll [ parens expression, unit, function, define, variable, string_, number, list, dict ]
+    e <- tryAll [ parens expression, undef, function, define, variable, string_, number, list, dict ]
     sub <- option [] $ try subscripts
     whiteSpace
     case sub of
         [] -> return e
         sub' -> return $ FuncCall (Variable "__get__") $ e : (map String sub')
 
-unit :: Parser Expression
-unit = symbol "(" >> symbol ")" >> return Unit
+undef :: Parser Expression
+undef = symbol "(" >> symbol ")" >> return Undef
 
 -- [ param, param -> ] { expression [; expression ...] }
 function :: Parser Expression

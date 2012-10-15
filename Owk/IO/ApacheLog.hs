@@ -64,11 +64,11 @@ apacheLog = do
 
   where
     b2s = String . decodeUtf8
-    b2s' b | b == "-" = Unit
+    b2s' b | b == "-" = Undef
            | otherwise = b2s b
     n = Number . I
     n' (Just i) = n i
-    n' Nothing = Unit
+    n' Nothing = Undef
 
 mdecimal :: Parser (Maybe Integer)
 mdecimal = (Just <$> try decimal) <|> (char '-' >> return Nothing)

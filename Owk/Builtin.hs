@@ -23,7 +23,7 @@ builtins :: [(T.Text, Object)]
 builtins =
     [ ("true", Bool True)
     , ("false", Bool False)
-    , ("unit", Unit)
+    , ("undef", Undef)
     , ("list", builtin0 list)
     , ("str", builtin0 str)
     , ("num", builtin0 num)
@@ -82,7 +82,7 @@ sort (List v) = do
         V.unsafeFreeze vm
     return $ List v'
 sort d@(Dict _) = sort (list d)
-sort Unit = sort (list Unit)
+sort Undef = sort (list Undef)
 sort obj = exception $ String $ "sort: not a List: " <> showText obj
 
 
@@ -144,9 +144,9 @@ __or__ _ right = right
 
 
 __get__ :: Function
-__get__ (Unit:_) = return Unit
-__get__ (Dict h:String name:names@(String _:_)) = __get__ $ H.lookupDefault Unit name h : names
-__get__ (Dict h:String name:_) = return $ H.lookupDefault Unit name h
+__get__ (Undef:_) = return Undef
+__get__ (Dict h:String name:names@(String _:_)) = __get__ $ H.lookupDefault Undef name h : names
+__get__ (Dict h:String name:_) = return $ H.lookupDefault Undef name h
 __get__ (obj:_) = exception $ String $ "__get__: not a Dict: " <> showText obj
 __get__  [] = error "should not be reached"
 
@@ -154,7 +154,7 @@ __if__ :: Object -> Object -> Owk Object
 __if__ b block =
     case bool b of
         Bool True  -> funcCall block []
-        Bool False -> return Unit
+        Bool False -> return Undef
         _          -> error "bool should return Bool only"
 
 __wref__ :: Object -> Object -> Owk Object
@@ -166,7 +166,7 @@ __match__ (String t) (String pat) =
     case regex' [] pat of
         Left e  -> exception $ String $ "__match__: parse error: " <> showText e
         Right r -> return $ Bool $ isJust $ find r t
-__match__ Unit pat = __match__ (str Unit) pat
+__match__ Undef pat = __match__ (str Undef) pat
 __match__ (String _) obj = exception $ String $ "__match__: not a String: " <> showText obj
 __match__ obj _ = exception $ String $ "__match__: not a String: " <> showText obj
 
@@ -200,13 +200,13 @@ else_ (block:_) = return block
 else_ [] = error "should not be reached"
 
 for :: Function
-for (List v:_) = return . Function Builtin $ \(block:_) -> V.foldM (\_ obj -> funcCall block [obj]) Unit v
+for (List v:_) = return . Function Builtin $ \(block:_) -> V.foldM (\_ obj -> funcCall block [obj]) Undef v
 for (d@(Dict _):args) = for (list d:args)
-for (Unit:args) = for (list Unit:args)
+for (Undef:args) = for (list Undef:args)
 for _ = exception $ String "for: not implemented"
 
 while :: Function
-while (cond:_) = return . Function Builtin $ \(block:_) -> go block Unit
+while (cond:_) = return . Function Builtin $ \(block:_) -> go block Undef
   where
     go block ret = do
         Bool b <- bool <$> funcCall cond []
@@ -229,7 +229,7 @@ getobj _ = do
     mo <- lift await
     case mo of
         Just o  -> return o
-        Nothing -> return Unit
+        Nothing -> return Undef
 
 catch_ :: Function
 catch_ (body:_) = funcCall body [] `catchError` catch'
@@ -245,16 +245,16 @@ exit_ _ = exit 0
 
 numop :: (Number -> Number -> Number) -> Function
 numop op (Number l:Number r:_) = return $ Number $ l `op` r
-numop op (n@(Number _):Unit:_) = numop op [n, num Unit]
-numop op (Unit:n@(Number _):_) = numop op [num Unit, n]
-numop op (n@(Number _):[]) = numop op [n, num Unit]
+numop op (n@(Number _):Undef:_) = numop op [n, num Undef]
+numop op (Undef:n@(Number _):_) = numop op [num Undef, n]
+numop op (n@(Number _):[]) = numop op [n, num Undef]
 numop _ (Number _:obj) = exception $ String $ "not a number: " <> showText obj
 numop _ (obj:_) = exception $ String $ "not a number: " <> showText obj
 numop _ [] = error "should not be reached"
 
 mkOp :: (Object -> Object -> Object) -> Function
 mkOp op (left:right:_) = return $ op left right
-mkOp op [left] = mkOp op [left, Unit]
+mkOp op [left] = mkOp op [left, Undef]
 mkOp _ [] = error "should not be reached"
 
 mkCmp :: (Object -> Object -> Bool) -> Function
@@ -279,12 +279,12 @@ builtin2 :: (Object -> Object -> Object) -> Object
 builtin2 f = Function Builtin go
   where
     go (arg1:arg2:_) = return $ f arg1 arg2
-    go [arg1] = return $ f arg1 Unit
+    go [arg1] = return $ f arg1 Undef
     go [] = error "should no be reached"
 
 builtin2M :: (Object -> Object -> Owk Object) -> Object
 builtin2M f = Function Builtin go
   where
     go (arg1:arg2:_) = f arg1 arg2
-    go [arg1] = f arg1 Unit
+    go [arg1] = f arg1 Undef
     go [] = error "should no be reached"

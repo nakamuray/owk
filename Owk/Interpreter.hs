@@ -18,7 +18,7 @@ import Owk.Type as Type
 
 
 interpret :: Program -> Owk Object
-interpret (Program es) = foldM (const expr) Type.Unit es
+interpret (Program es) = foldM (const expr) Type.Undef es
 
 interpret_ :: Program -> Owk ()
 interpret_ (Program es) = mapM_ expr es
@@ -27,8 +27,8 @@ expr :: Expression -> Owk Object
 expr (AST.Function params es) = do
     s <- ask
     return $ Type.Function s $ \args -> do
-        mapM (uncurry define) $ zip (params ++ ["_"]) (args ++ repeat Type.Unit)
-        foldM (const expr) Type.Unit es
+        mapM (uncurry define) $ zip (params ++ ["_"]) (args ++ repeat Type.Undef)
+        foldM (const expr) Type.Undef es
 expr (Define name e) = do
     v <- expr e
     define name v
@@ -41,7 +41,7 @@ expr (AST.String s) = return $ Type.String s
 expr (AST.Number n) = return $ Type.Number n
 expr (AST.List es) = Type.List . V.fromList <$> mapM expr es
 expr (AST.Dict kvs) = Type.Dict . H.fromList <$> mapM (\(k, v) -> expr v >>= \v' -> return (k, v')) kvs
-expr AST.Unit = return Type.Unit
+expr AST.Undef = return Type.Undef
 
 funcCall :: Object -> [Object] -> Owk Object
 funcCall (Type.Function s f) args = do
@@ -50,7 +50,7 @@ funcCall (Type.Function s f) args = do
 funcCall (Type.Ref r) _ = readRef r
 funcCall (Type.List v) [Type.Number (I i)]
     | fromInteger i < V.length v = return $ v V.! (fromInteger i)
-    | otherwise = return Type.Unit
+    | otherwise = return Type.Undef
 funcCall (Type.List v) [Type.Number (I i), Type.Number (I j)] = return $ Type.List $ V.slice start count v
   where
     len = V.length v

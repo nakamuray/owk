@@ -14,5 +14,5 @@ data Expression = Function [Text] [Expression]
                 | Number Number
                 | List [Expression]
                 | Dict [(Text, Expression)]
-                | Unit
+                | Undef
     deriving (Eq, {- Read, -} Show)

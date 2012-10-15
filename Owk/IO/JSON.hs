@@ -38,7 +38,7 @@ instance FromJSON O.Object where
     parseJSON (A.String t) = return $ O.String t
     parseJSON (A.Number n) = return $ O.Number n
     parseJSON (A.Bool b) = return $ O.Bool b
-    parseJSON A.Null = return O.Unit
+    parseJSON A.Null = return O.Undef
 
 instance ToJSON O.Object where
     toJSON (O.Dict h) = A.Object $ H.map toJSON h
@@ -48,4 +48,4 @@ instance ToJSON O.Object where
     toJSON (O.Bool b) = A.Bool b
     toJSON (O.Function _ _) = A.String "<Function>"
     toJSON (O.Ref _) = A.String "<Ref>"
-    toJSON O.Unit = A.Null
+    toJSON O.Undef = A.Null
