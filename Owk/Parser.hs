@@ -55,6 +55,9 @@ dot        = symbol "."
 lexeme :: Parser a -> Parser a
 lexeme p = p <* whiteSpace
 
+lexeme' :: Parser a -> Parser a
+lexeme' p = p <* whiteSpace'
+
 whiteSpace :: Parser ()
 whiteSpace = skipMany (simpleSpaces <|> newlineFollowingBackspace <|> oneLineComment <?> "white spaces")
   where
@@ -64,6 +67,9 @@ whiteSpace = skipMany (simpleSpaces <|> newlineFollowingBackspace <|> oneLineCom
         try (string "#")
         skipMany (satisfy (/= '\n'))
         return ()
+
+whiteSpace' :: Parser ()
+whiteSpace' = blankLines >> whiteSpace
 
 blankLines :: Parser ()
 blankLines = do
@@ -154,15 +160,19 @@ number = Number <$> do
   <?> "number"
 
 list :: Parser Expression
-list = flip label "list" $ List <$> (brackets $ expression `sepEndBy` comma)
+list = flip label "list" $ List <$> (brackets $ whiteSpace' *> lexeme' expression `sepEndBy` lexeme' comma)
 
 dict :: Parser Expression
-dict = flip label "dict" $ Dict <$> (braces $ kv `sepEndBy` comma)
+dict = flip label "dict" $ Dict <$> (braces $ whiteSpace' *> kv `sepEndBy` lexeme' comma)
   where
     kv = do
+        whiteSpace'
         k <- varName
+        whiteSpace'
         symbol "=>"
+        whiteSpace'
         v <- expression
+        whiteSpace'
         return (k, v)
 
 varName :: Parser T.Text
