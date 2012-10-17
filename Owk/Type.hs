@@ -80,6 +80,9 @@ data Object = Dict (H.HashMap Text Object)
             | Ref Ref
             | Undef
 
+type Function = [Object] -> Owk Object
+type Ref = TVar Object
+
 instance Show Object where
     show (Dict o)     = "Dict " ++ show o
     show (List o)     = "List " ++ show o
@@ -177,9 +180,6 @@ instance Ord Object where
     Undef `compare` Dict _ = LT
     Undef `compare` Number _ = LT
     Undef `compare` Bool _ = LT
-
-type Function = [Object] -> Owk Object
-type Ref = TVar Object
 
 runOwk :: Owk () -> Namespace -> Conduit Object IO [Object]
 runOwk (OwkT o) n = do
