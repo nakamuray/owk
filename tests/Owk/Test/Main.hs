@@ -34,6 +34,16 @@ case_sum = do
         , "}"
         ]
 
+case_tail = do
+    ret <- testOwkString script_tail $ map (Number . I ) [1..10]
+    ret @?= map ((:[]) . Number . I) [2..10]
+  where
+    script_tail = T.unlines
+        [ "# read and ignore first object"
+        , "getobj ()"
+        , "main = print"
+        ]
+
 
 testOwkString :: T.Text -> [Object] -> IO [[Object]]
 testOwkString script inputs = CL.sourceList inputs $= owkString script $$ CL.consume
