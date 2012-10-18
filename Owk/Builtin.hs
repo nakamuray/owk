@@ -63,11 +63,10 @@ builtins =
     , ("for", builtin for)
     , ("while", builtin while)
 
-    , ("return", builtin return_)
     , ("print", builtin print)
     , ("getobj", builtin getobj)
     , ("catch", builtin catch_)
-    , ("throw", builtin1M exception)
+    , ("throw", builtin1M throw)
     , ("next", builtin $ const next)
     , ("exit", builtin exit_)
     ]
@@ -215,10 +214,6 @@ while (cond:_) = return . Function Builtin $ \(block:_) -> go block Undef
           else return ret
 while [] = error "should not be reached"
 
-return_ :: Function
-return_ (ret:_) = throwError $ Return ret
-return_ [] = error "should not be reached"
-
 print :: Function
 print args = do
     lift $ yield args
@@ -234,7 +229,7 @@ getobj _ = do
 catch_ :: Function
 catch_ (body:_) = funcCall body [] `catchError` catch'
   where
-    catch' (Exception obj) = return obj
+    catch' (Return obj) = return obj
     catch' e = throwError e
 catch_ [] = error "should not be reached"
 

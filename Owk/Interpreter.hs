@@ -3,7 +3,6 @@ module Owk.Interpreter where
 
 import Control.Applicative ((<$>))
 import Control.Monad (foldM)
-import Control.Monad.Error (MonadError, catchError)
 import Control.Monad.Reader (MonadReader, ask, local)
 import Data.Monoid ((<>))
 
@@ -46,7 +45,7 @@ expr AST.Undef = return Type.Undef
 funcCall :: Object -> [Object] -> Owk Object
 funcCall (Type.Function s f) args = do
     s' <- liftIO $ Namespace.create s
-    local (const s') $ catchReturn $ f args
+    local (const s') $ f args
 funcCall (Type.Ref r) _ = readRef r
 funcCall (Type.List v) [Type.Number (I i)]
     | fromInteger i < V.length v = return $ v V.! (fromInteger i)
@@ -65,9 +64,3 @@ funcCall (Type.Dict h) [Type.List v] | V.length v == 2 =
     in return $ Type.Dict $ H.insert key' val h
 funcCall (Type.Dict _) _ = exception $ Type.String $ "dict only accept 1 other dict"
 funcCall obj _ = exception $ Type.String $ "not a function: " <> showText obj
-
-catchReturn :: Owk Object -> Owk Object
-catchReturn owk = owk `catchError` catcher
-  where
-    catcher (Return o) = return o
-    catcher e = throwError e

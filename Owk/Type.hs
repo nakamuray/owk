@@ -10,6 +10,7 @@ module Owk.Type
 
     , runOwk
 
+    , throw
     , exit
     , exception
     , next
@@ -187,6 +188,9 @@ runOwk (OwkT o) n = do
     case ret of
         Left  e -> error $ show e
         Right a -> return a
+
+throw :: Object -> Owk a
+throw = throwError . Return
 
 exit :: Int -> Owk a
 exit = throwError . Exit
