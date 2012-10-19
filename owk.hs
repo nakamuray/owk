@@ -53,6 +53,7 @@ outputs :: [(String, OwkOutput)]
 outputs =
     [ ("line", Line.fromObjects)
     , ("json", JSON.fromObjects)
+    , ("jsonpr", JSON.fromObjectsPretty)
     ]
 
 usage :: String
@@ -69,6 +70,7 @@ usage = unlines
     , ""
     , "TYPE: line (default)"
     , "      json"
+    , "      jsonpr (output only)"
     , "      apachelog (input only)"
     ]
 

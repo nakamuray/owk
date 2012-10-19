@@ -19,6 +19,7 @@ executable owk
   -- other-modules:       
   build-depends:       base ==4.5.*
                      , aeson
+                     , aeson-pretty
                      , attoparsec
                      , attoparsec-conduit
                      , bytestring

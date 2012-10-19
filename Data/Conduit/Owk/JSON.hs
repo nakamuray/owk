@@ -2,12 +2,14 @@
 module Data.Conduit.Owk.JSON
     ( toObject
     , fromObjects
+    , fromObjectsPretty
     ) where
 
 import Data.Conduit
 
 import Control.Applicative ((<$), (<$>), (<|>))
 import Data.Aeson as A
+import Data.Aeson.Encode.Pretty (encodePretty)
 import Data.Attoparsec.ByteString.Char8 (endOfInput, skipSpace)
 import System.IO (hPutStrLn, stderr)
 
@@ -32,7 +34,13 @@ toObject = CA.conduitParser jsonOrEmpty =$= awaitForever (yieldObj . fmap fromJS
     yieldObj Nothing                       = return ()
 
 fromObjects :: OwkOutput
-fromObjects = CL.map (flip B.append "\n" . B.concat . BL.toChunks . BL.intercalate " " . map encode)
+fromObjects = fromObjects' encode
+
+fromObjectsPretty :: OwkOutput
+fromObjectsPretty = fromObjects' encodePretty
+
+fromObjects' :: (O.Object -> BL.ByteString) -> OwkOutput
+fromObjects' encoder = CL.map (flip B.append "\n" . B.concat . BL.toChunks . BL.intercalate " " . map encoder)
 
 instance FromJSON O.Object where
     -- XXX: 何かきれいに書ける方法がありそうな気がしている
