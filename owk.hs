@@ -13,10 +13,10 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as TI
 
 import Data.Conduit.Owk
-import Owk.IO.Type
-import qualified Owk.IO.ApacheLog as ApacheLog
-import qualified Owk.IO.Line as Line
-import qualified Owk.IO.JSON as JSON
+import Data.Conduit.Owk.Type
+import qualified Data.Conduit.Owk.ApacheLog as ApacheLog
+import qualified Data.Conduit.Owk.Line as Line
+import qualified Data.Conduit.Owk.JSON as JSON
 import Owk.Parser
 
 
@@ -42,12 +42,18 @@ run (Config _ _ em fname script i o) = do
     source $= owk' $$ sink
 
 
-iopipes :: [(String, IOPipe)]
-iopipes =
-  [ ("line", Line.iopipe)
-  , ("json", JSON.iopipe)
-  , ("apachelog", ApacheLog.iopipe)
-  ]
+inputs :: [(String, OwkInput)]
+inputs =
+    [ ("line", Line.toObject)
+    , ("json", JSON.toObject)
+    , ("apachelog", ApacheLog.toObject)
+    ]
+
+outputs :: [(String, OwkOutput)]
+outputs =
+    [ ("line", Line.fromObjects)
+    , ("json", JSON.fromObjects)
+    ]
 
 usage :: String
 usage = unlines
@@ -57,13 +63,13 @@ usage = unlines
     , "OPTIONS: -h        print this help"
     , "         -d        dump AST and exit"
     , "         -m        explicit `main = $ -> { ... }` function definition"
-    , "         -i TYPE   use TYPE input decoder"
-    , "         -o TYPE   use TYPE output encoder"
-    , "         -io TYPE  set both decoder/encoder"
+    , "         -i TYPE   set input TYPE"
+    , "         -o TYPE   set output TYPE"
+    , "         -io TYPE  set both input/output"
     , ""
     , "TYPE: line (default)"
     , "      json"
-    , "      apachelog"
+    , "      apachelog (input only)"
     ]
 
 pprint :: Show a => a -> IO ()
@@ -75,12 +81,12 @@ data Config = Config
   , explicitMain :: Bool
   , fileName :: FilePath
   , owkScript :: IO T.Text
-  , ioInput :: Input
-  , ioOutput :: Output
+  , owkInput :: OwkInput
+  , owkOutput :: OwkOutput
   }
 
 defaultConfig :: Config
-defaultConfig = Config False False False "<stdin>" TI.getContents (input Line.iopipe)  (output Line.iopipe)
+defaultConfig = Config False False False "<stdin>" TI.getContents Line.toObject Line.fromObjects
 
 parseArgs :: [String] -> Config
 parseArgs args = parseArgs' defaultConfig args
@@ -92,12 +98,12 @@ parseArgs' config ("-d":args) = parseArgs' config { dumpAST = True } args
 parseArgs' config ("-m":args) = parseArgs' config { explicitMain = True } args
 parseArgs' config ("-f":fname:args) = parseArgs' config { fileName = fname, owkScript = TI.readFile fname } args
 parseArgs' config ("-i":pname:args) =
-    case lookup pname iopipes of
-        Just pipe -> parseArgs' config { ioInput = input pipe} args
+    case lookup pname inputs of
+        Just input -> parseArgs' config { owkInput = input } args
         Nothing   -> error $ "unknown TYPE name: " ++ pname
 parseArgs' config ("-o":pname:args) =
-    case lookup pname iopipes of
-        Just pipe -> parseArgs' config { ioOutput = output pipe} args
+    case lookup pname outputs of
+        Just output -> parseArgs' config { owkOutput = output } args
         Nothing   -> error $ "unknown TYPE name: " ++ pname
 parseArgs' config ("-io":pname:args) = parseArgs' config $ "-i":pname:"-o":pname:args
 parseArgs' config (script:args) = parseArgs' config { fileName = "<string>", owkScript = return $ T.pack script } args

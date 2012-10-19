@@ -1,5 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Owk.IO.JSON where
+module Data.Conduit.Owk.JSON
+    ( toObject
+    , fromObjects
+    ) where
 
 import Data.Conduit
 
@@ -15,14 +18,11 @@ import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.HashMap.Strict as H
 import qualified Data.Vector as V
 
-import Owk.IO.Type
+import Data.Conduit.Owk.Type
 import Owk.Type as O
 
-iopipe :: IOPipe
-iopipe = IOPipe
-    { input = CA.conduitParser jsonOrEmpty =$= awaitForever (yieldObj . fmap fromJSON . snd)
-    , output = CL.map (flip B.append "\n" . B.concat . BL.toChunks . BL.intercalate " " . map encode)
-    }
+toObject :: OwkInput
+toObject = CA.conduitParser jsonOrEmpty =$= awaitForever (yieldObj . fmap fromJSON . snd)
   where
     jsonOrEmpty = (Just <$> A.json) <|> (Nothing <$ (skipSpace >> endOfInput))
 
@@ -30,6 +30,9 @@ iopipe = IOPipe
     yieldObj (Just (A.Success (O.List v))) = V.mapM_ yield v
     yieldObj (Just (A.Success obj))        = yield obj
     yieldObj Nothing                       = return ()
+
+fromObjects :: OwkOutput
+fromObjects = CL.map (flip B.append "\n" . B.concat . BL.toChunks . BL.intercalate " " . map encode)
 
 instance FromJSON O.Object where
     -- XXX: 何かきれいに書ける方法がありそうな気がしている

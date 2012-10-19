@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Owk.IO.ApacheLog ( iopipe ) where
+module Data.Conduit.Owk.ApacheLog ( toObject ) where
 
 import Control.Applicative
 import Data.Conduit
@@ -12,16 +12,11 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.Conduit.Attoparsec as CA
 import qualified Data.HashMap.Strict as H
 
-import Owk.IO.Type
+import Data.Conduit.Owk.Type
 import Owk.Type
 
-import qualified Owk.IO.Line as Line
-
-iopipe :: IOPipe
-iopipe = IOPipe
-    { input = CA.conduitParser apacheLog =$= awaitForever (yield . snd)
-    , output = output Line.iopipe
-    }
+toObject :: OwkInput
+toObject = CA.conduitParser apacheLog =$= awaitForever (yield . snd)
 
 apacheLog :: Parser Object
 apacheLog = do
