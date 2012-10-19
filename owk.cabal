@@ -59,6 +59,7 @@ test-suite test-owk
                      , vector-algorithms
 
                      , HUnit
+                     , template-haskell
                      , test-framework
                      , test-framework-hunit
                      , test-framework-th
