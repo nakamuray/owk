@@ -5,8 +5,6 @@ module Owk.Test.Interpreter where
 import Test.Framework.TH
 import Test.HUnit
 
-import Data.Conduit
-
 import Data.Text ()
 import Test.Framework (testGroup)
 import Test.Framework.Providers.HUnit (testCase)
@@ -14,10 +12,8 @@ import Test.Framework.Providers.HUnit (testCase)
 import Owk.AST as AST
 import Owk.Interpreter
 import Owk.Type as Type
+import Owk.Test.Util
 
-import qualified Owk.Namespace as Namespace
-
-import qualified Data.Conduit.List as CL
 import qualified Data.HashMap.Strict as H
 import qualified Data.Vector as V
 
@@ -62,10 +58,3 @@ case_dict_2 = testOwk_ $ do
     let d = Type.Dict $ H.fromList [("key1", Type.String "value1"), ("key2", Type.String "value2")]
     d' <- funcCall d [Type.List $ V.fromList [Type.String "key3", Type.String "value3"]]
     liftIO $ d' @?= Type.Dict (H.fromList [("key2", Type.String "value2"), ("key3", Type.String "value3"), ("key1", Type.String "value1")])
-
-
-testOwk owk = do
-    n <- Namespace.fromList []
-    CL.sourceNull $= runOwk owk n $$ CL.consume
-
-testOwk_ owk = testOwk owk >> return ()
