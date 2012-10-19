@@ -33,7 +33,7 @@ builtins =
     , ("sort", builtin1M sort)
 
       -- operators
-    , ("__add__", builtin __add__)
+    , ("__add__", builtin2M __add__)
     , ("__app__", builtin __app__)
     , ("__div__", builtin __div__)
     , ("__get__", builtin __get__)
@@ -86,8 +86,17 @@ sort obj = exception $ String $ "sort: not a List: " <> showText obj
 
 
 -- operators
-__add__ :: Function
-__add__ = numop (+)
+__add__ :: Object -> Object -> Owk Object
+__add__ (Number l) (Number r) = return $ Number $ l + r
+__add__ l@(Number _) Undef = __add__ l (num Undef)
+__add__ Undef r@(Number _) = __add__ (num Undef) r
+__add__ (String l) (String r) = return $ String $ l <> r
+__add__ l@(String _) Undef = __add__ l (str Undef)
+__add__ Undef r@(String _) = __add__ (str Undef) r
+__add__ (List l) (List r) = return $ List $ l <> r
+__add__ l@(List _) Undef = __add__ l (list Undef)
+__add__ Undef r@(List _) = __add__ (list Undef) r
+__add__ l r = exception $ String $ "__add__: type mismatch: " <> showText l <> " and " <> showText r
 
 __app__ :: Function
 __app__ (obj:args) = funcCall obj args
@@ -238,6 +247,8 @@ exit_ (Number (I i):_) = exit $ fromInteger i
 exit_ (Number (D d):_) = exit $ error "exit with Double: not implemented" d
 exit_ _ = exit 0
 
+
+-- helper functions
 numop :: (Number -> Number -> Number) -> Function
 numop op (Number l:Number r:_) = return $ Number $ l `op` r
 numop op (n@(Number _):Undef:_) = numop op [n, num Undef]
