@@ -58,9 +58,14 @@ funcCall (Type.List v) [Type.Number (I i), Type.Number (I j)] = return $ Type.Li
 funcCall obj@(Type.List _) [Type.List v] = funcCall obj $ V.toList v
 funcCall (Type.List _) _ = exception $ Type.String $ "list only accept 1 or 2 numbers"
 funcCall (Type.Dict h) [Type.Dict i] = return $ Type.Dict $ H.union i h
-funcCall (Type.Dict h) [Type.List v] | V.length v == 2 =
-    let [key, val] = V.toList v
-        Type.String key' = str key
-    in return $ Type.Dict $ H.insert key' val h
+funcCall (Type.Dict h) [Type.List v]
+    | V.length v == 1 =
+        let [key] = V.toList v
+            Type.String key' = str key
+        in return $ H.lookupDefault Type.Undef key' h
+    | V.length v == 2 =
+        let [key, val] = V.toList v
+            Type.String key' = str key
+        in return $ Type.Dict $ H.insert key' val h
 funcCall (Type.Dict _) _ = exception $ Type.String $ "dict only accept 1 other dict"
 funcCall obj _ = exception $ Type.String $ "not a function: " <> showText obj
