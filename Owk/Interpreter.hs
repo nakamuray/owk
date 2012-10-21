@@ -26,8 +26,9 @@ expr :: Expression -> Owk Object
 expr (AST.Function params es) = do
     s <- ask
     return $ Type.Function s $ \args -> do
-        mapM (uncurry define) $ zip (params ++ ["_"]) (args ++ repeat Type.Undef)
-        foldM (const expr) Type.Undef es
+        ns <- liftIO $ Namespace.fromList $ zip (params ++ ["_"]) (args ++ repeat Type.Undef)
+        let scope = Local s ns
+        local (const scope) $ foldM (const expr) Type.Undef es
 expr (Define name e) = do
     v <- expr e
     define name v
@@ -43,9 +44,7 @@ expr (AST.Dict kvs) = Type.Dict . H.fromList <$> mapM (\(k, v) -> expr v >>= \v'
 expr AST.Undef = return Type.Undef
 
 funcCall :: Object -> [Object] -> Owk Object
-funcCall (Type.Function s f) args = do
-    s' <- liftIO $ Namespace.create s
-    local (const s') $ f args
+funcCall (Type.Function _ f) args = f args
 funcCall (Type.Ref r) _ = readRef r
 funcCall (Type.List v) [Type.Number (I i)]
     | fromInteger i < V.length v = return $ v V.! (fromInteger i)
