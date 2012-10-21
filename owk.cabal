@@ -36,6 +36,7 @@ executable owk
                      , vector-algorithms
 
   ghc-options:         -O2 -Wall -fno-warn-unused-do-bind
+  ghc-prof-options:    -auto-all
 
 test-suite test-owk
   type:                exitcode-stdio-1.0
