@@ -57,6 +57,6 @@ instance ToJSON O.Object where
     toJSON (O.String t) = A.String t
     toJSON (O.Number n) = A.Number n
     toJSON (O.Bool b) = A.Bool b
-    toJSON (O.Function _ _) = A.String "<Function>"
+    toJSON (O.Function _) = A.String "<Function>"
     toJSON (O.Ref _) = A.String "<Ref>"
     toJSON O.Undef = A.Null

@@ -28,7 +28,7 @@ builtins =
     , ("str", builtin0 str)
     , ("num", builtin0 num)
     , ("bool", builtin0 bool)
-    , ("ref", Function Builtin $ \(obj:_) -> Ref <$> ref obj)
+    , ("ref", Function $ \(obj:_) -> Ref <$> ref obj)
 
     , ("sort", builtin1M sort)
 
@@ -193,11 +193,11 @@ __nmatch__ t pat = do
 --   print "false"
 -- }
 if_, then_, else_ :: Function
-if_ (b:_) = return . Function Builtin $ \(thenElseBlock:_) -> funcCall thenElseBlock [b]
+if_ (b:_) = return . Function $ \(thenElseBlock:_) -> funcCall thenElseBlock [b]
 if_ [] = error "should not be reached"
 
-then_ (block:_) = return . Function Builtin $ \(elseBlock:_) ->
-    return . Function Builtin $ \(b:_) ->
+then_ (block:_) = return . Function $ \(elseBlock:_) ->
+    return . Function $ \(b:_) ->
         case bool b of
             Bool True  -> funcCall block []
             Bool False -> funcCall elseBlock []
@@ -208,13 +208,13 @@ else_ (block:_) = return block
 else_ [] = error "should not be reached"
 
 for :: Function
-for (List v:_) = return . Function Builtin $ \(block:_) -> V.foldM (\_ obj -> funcCall block [obj]) Undef v
+for (List v:_) = return . Function $ \(block:_) -> V.foldM (\_ obj -> funcCall block [obj]) Undef v
 for (d@(Dict _):args) = for (list d:args)
 for (Undef:args) = for (list Undef:args)
 for _ = exception $ String "for: not implemented"
 
 while :: Function
-while (cond:_) = return . Function Builtin $ \(block:_) -> go block Undef
+while (cond:_) = return . Function $ \(block:_) -> go block Undef
   where
     go block ret = do
         Bool b <- bool <$> funcCall cond []
@@ -272,24 +272,24 @@ isTrue (Bool False) = False
 isTrue obj = isTrue $ bool obj
 
 builtin :: Function -> Object
-builtin f = Function Builtin f
+builtin f = Function f
 
 -- create `Function` from Object to Object function
 builtin0 :: (Object -> Object) -> Object
-builtin0 f = Function Builtin $ \(arg:_) -> return $ f arg
+builtin0 f = Function $ \(arg:_) -> return $ f arg
 
 builtin1M :: (Object -> Owk Object) -> Object
-builtin1M f = Function Builtin $ \(arg:_) -> f arg
+builtin1M f = Function $ \(arg:_) -> f arg
 
 builtin2 :: (Object -> Object -> Object) -> Object
-builtin2 f = Function Builtin go
+builtin2 f = Function go
   where
     go (arg1:arg2:_) = return $ f arg1 arg2
     go [arg1] = return $ f arg1 Undef
     go [] = error "should no be reached"
 
 builtin2M :: (Object -> Object -> Owk Object) -> Object
-builtin2M f = Function Builtin go
+builtin2M f = Function go
   where
     go (arg1:arg2:_) = f arg1 arg2
     go [arg1] = f arg1 Undef

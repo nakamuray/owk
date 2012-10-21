@@ -50,12 +50,10 @@ define n v = do
 currentNamepace :: Scope -> Namespace
 currentNamepace (Global n) = n
 currentNamepace (Local _ n) = n
-currentNamepace Builtin = error "built-in functions should not use namespace"
 
 parentScope :: Scope -> Maybe Scope
 parentScope (Global _)  = Nothing
 parentScope (Local s _) = Just s
-parentScope Builtin  = Nothing
 
 lookup :: Text -> Owk Object
 lookup n = do
