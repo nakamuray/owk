@@ -1,3 +1,4 @@
+{-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Owk.Type
@@ -46,6 +47,7 @@ import Data.Aeson (encode)
 import Data.Attoparsec.Number (Number(..))
 import Data.Monoid ((<>))
 import Data.Text (Text)
+import Data.Typeable (Typeable)
 import Data.Vector (Vector)
 
 import qualified Data.HashMap.Strict as H
@@ -80,6 +82,7 @@ data Object = Dict (H.HashMap Text Object)
             | Function Function
             | Ref Ref
             | Undef
+            | forall a. (Typeable a, Show a) => HaskellData a
 
 type Function = [Object] -> Owk Object
 type Ref = TVar Object
@@ -93,6 +96,7 @@ instance Show Object where
     show Undef         = "Undef"
     show (Ref _)      = "Ref"
     show (Function _) = "Function"
+    show (HaskellData a) = "HaskellData " ++ show a
 
 instance Eq Object where
     Dict o1 == Dict o2 = o1 == o2
@@ -106,9 +110,11 @@ instance Eq Object where
     _ == Function _ = error "not implemented: how to compare function?"
     -- XXX: how to compare Ref without IO?
     Ref _ == Ref _ = error "not implemented: how to comare ref?"
+    HaskellData _ == HaskellData _ = error "not implemented: how to comare haskell data?"
     _ == _ = False
 
 instance Ord Object where
+    HaskellData _ `compare` HaskellData _ = error "not implemented: how to compare haskell data?"
     Ref _ `compare` Ref _ = error "not implemented: how to compare refs?"
     String o1 `compare` String o2 = o1 `compare` o2
     List o1 `compare` List o2 = o1 `compare` o2
@@ -118,6 +124,16 @@ instance Ord Object where
     Bool o1 `compare` Bool o2 = o1 `compare` o2
     Undef `compare` Undef = EQ
 
+    HaskellData _ `compare` Ref _ = GT
+    HaskellData _ `compare` String _ = GT
+    HaskellData _ `compare` List _ = GT
+    HaskellData _ `compare` Function _ = GT
+    HaskellData _ `compare` Dict _ = GT
+    HaskellData _ `compare` Number _ = GT
+    HaskellData _ `compare` Bool _ = GT
+    HaskellData _ `compare` Undef = GT
+
+    Ref _ `compare` HaskellData _ = LT
     Ref _ `compare` String _ = GT
     Ref _ `compare` List _ = GT
     Ref _ `compare` Function _ = GT
@@ -126,6 +142,7 @@ instance Ord Object where
     Ref _ `compare` Bool _ = GT
     Ref _ `compare` Undef = GT
 
+    String _ `compare` HaskellData _ = LT
     String _ `compare` Ref _ = LT
     String _ `compare` List _ = GT
     String _ `compare` Function _ = GT
@@ -134,6 +151,7 @@ instance Ord Object where
     String _ `compare` Bool _ = GT
     String _ `compare` Undef = GT
 
+    List _ `compare` HaskellData _ = LT
     List _ `compare` Ref _ = LT
     List _ `compare` String _ = LT
     List _ `compare` Function _ = GT
@@ -142,6 +160,7 @@ instance Ord Object where
     List _ `compare` Bool _ = GT
     List _ `compare` Undef = GT
 
+    Function _ `compare` HaskellData _ = LT
     Function _ `compare` Ref _ = LT
     Function _ `compare` String _ = LT
     Function _ `compare` List _ = LT
@@ -150,6 +169,7 @@ instance Ord Object where
     Function _ `compare` Bool _ = GT
     Function _ `compare` Undef = GT
 
+    Dict _ `compare` HaskellData _ = LT
     Dict _ `compare` Ref _ = LT
     Dict _ `compare` String _ = LT
     Dict _ `compare` Function _ = LT
@@ -158,6 +178,7 @@ instance Ord Object where
     Dict _ `compare` Bool _ = GT
     Dict _ `compare` Undef = GT
 
+    Number _ `compare` HaskellData _ = LT
     Number _ `compare` Ref _ = LT
     Number _ `compare` String _ = LT
     Number _ `compare` Function _ = LT
@@ -166,6 +187,7 @@ instance Ord Object where
     Number _ `compare` Bool _ = GT
     Number _ `compare` Undef = GT
 
+    Bool _ `compare` HaskellData _ = LT
     Bool _ `compare` Ref _ = LT
     Bool _ `compare` String _ = LT
     Bool _ `compare` Function _ = LT
@@ -174,6 +196,7 @@ instance Ord Object where
     Bool _ `compare` Number _ = LT
     Bool _ `compare` Undef = GT
 
+    Undef `compare` HaskellData _ = LT
     Undef `compare` Ref _ = LT
     Undef `compare` String _ = LT
     Undef `compare` Function _ = LT
@@ -221,6 +244,7 @@ str (Bool False) = String "false"
 str Undef = String ""
 str o@(List _) = String $ str' o
 str o@(Dict _) = String $ str' o
+str o@(HaskellData _) = String $ str' o
 str o = error $ "str: not implemented: " ++ show o
 
 str' :: Object -> Text
@@ -235,6 +259,7 @@ str' (List v) = "[" <> T.intercalate ", " (map str' $ V.toList v) <> "]"
 str' (Dict h) = "{" <> T.intercalate ", " (map toKV $ H.toList h) <> "}"
   where
     toKV (k, v) = k <> " => " <> str' v
+str' (HaskellData a) = showText a
 
 num :: Object -> Object
 num (Dict h) = Number $ I $ toInteger $ H.size h

@@ -22,6 +22,7 @@ import qualified Data.Vector as V
 
 import Data.Conduit.Owk.Type
 import Owk.Type as O
+import Owk.Util
 
 toObject :: OwkInput
 toObject = CA.conduitParser jsonOrEmpty =$= awaitForever (yieldObj . fmap fromJSON . snd)
@@ -60,3 +61,4 @@ instance ToJSON O.Object where
     toJSON (O.Function _) = A.String "<Function>"
     toJSON (O.Ref _) = A.String "<Ref>"
     toJSON O.Undef = A.Null
+    toJSON (O.HaskellData a) = A.String (showText a)
