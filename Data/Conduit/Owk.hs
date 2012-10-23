@@ -19,6 +19,7 @@ import qualified Data.Text.IO as TI
 import qualified Owk.AST as AST
 import Owk.Builtin (builtins)
 import Owk.Interpreter
+import Owk.Module.Time (time)
 import Owk.Parser
 import Owk.Type
 import qualified Owk.Namespace as Namespace
@@ -60,7 +61,7 @@ owkMain fname script =
 
 conduitOwkProgram :: AST.Program -> Conduit Object IO [Object]
 conduitOwkProgram prog = do
-    n <- liftIO $ Namespace.fromList builtins
+    n <- liftIO $ Namespace.fromList globalNamespace
     -- run script and update global namespace,
     runOwk (interpret_ prog `catchError` catchExit) n
     -- search `main` function
@@ -87,3 +88,7 @@ conduitOwkProgram prog = do
     catchExit (Exit 0) = liftIO exitSuccess
     catchExit (Exit c) = liftIO $ exitWith $ ExitFailure c
     catchExit e        = throwError e
+
+-- TODO: load haskell modules at runtime
+globalNamespace :: [(Text, Object)]
+globalNamespace = builtins ++ [("time", time)]

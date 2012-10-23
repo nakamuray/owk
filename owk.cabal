@@ -26,11 +26,13 @@ executable owk
                      , conduit
                      , containers
                      , mtl
+                     , old-locale
                      , parsec
                      , pretty-show
                      , stm
                      , text
                      , text-icu
+                     , time
                      , unordered-containers
                      , vector
                      , vector-algorithms
@@ -51,11 +53,13 @@ test-suite test-owk
                      , conduit
                      , containers
                      , mtl
+                     , old-locale
                      , parsec
                      , pretty-show
                      , stm
                      , text
                      , text-icu
+                     , time
                      , unordered-containers
                      , vector
                      , vector-algorithms
