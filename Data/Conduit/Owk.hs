@@ -14,11 +14,13 @@ import Control.Monad.Error (catchError)
 import Data.Text (Text)
 import System.Exit (ExitCode(..), exitSuccess, exitWith)
 
+import qualified Data.HashMap.Strict as H
 import qualified Data.Text.IO as TI
 
 import qualified Owk.AST as AST
 import Owk.Builtin (builtins)
 import Owk.Interpreter
+import Owk.Module
 import Owk.Module.Time (time)
 import Owk.Parser
 import Owk.Type
@@ -46,7 +48,7 @@ owk fname script =
     case parseOwk fname script of
         -- TODO: don't use error, use conduit's error system
         Left e     -> error e
-        Right prog -> conduitOwkProgram prog
+        Right prog -> conduitOwkProgram fname prog
 
 owkMain :: String -> Text -> Conduit Object IO [Object]
 owkMain fname script =
@@ -55,18 +57,17 @@ owkMain fname script =
         Left e     -> error e
         Right prog ->
             let prog' = AST.Program [AST.Define "main" $ AST.Function ["$"] $ unProg prog]
-            in conduitOwkProgram prog'
+            in conduitOwkProgram fname prog'
   where
     unProg (AST.Program es) = es
 
-conduitOwkProgram :: AST.Program -> Conduit Object IO [Object]
-conduitOwkProgram prog = do
+conduitOwkProgram :: FilePath -> AST.Program -> Conduit Object IO [Object]
+conduitOwkProgram fname prog = do
     n <- liftIO $ Namespace.fromList globalNamespace
-    -- run script and update global namespace,
-    runOwk (interpret_ prog `catchError` catchExit) n
+    -- run script and get script's namespace,
+    Dict h <- runOwk' (importProgram fname prog `catchError` catchExit) n
     -- search `main` function
-    mmain <- liftIO $ Namespace.lookupIO "main" $ Global n
-    case mmain of
+    case H.lookup "main" h of
         -- TODO: don't use error
         Nothing    -> error "no `main` found"
         Just main -> do
@@ -74,8 +75,7 @@ conduitOwkProgram prog = do
             awaitForever $ \obj -> do
                 runOwk (funcCall main [obj] `catchError` ignoreNext `catchError` catchExit >> return ()) n
                 return ()
-            mend <- liftIO $ Namespace.lookupIO "end" $ Global n
-            case mend of
+            case H.lookup "end" h of
                 Just end -> do
                     runOwk (funcCall end [] `catchError` ignoreNext `catchError` catchExit >> return ()) n
                     return ()
