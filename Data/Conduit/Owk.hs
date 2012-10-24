@@ -68,8 +68,7 @@ conduitOwkProgram fname prog = do
     Dict h <- runOwk' (importProgram fname prog `catchError` catchExit) n
     -- search `main` function
     case H.lookup "main" h of
-        -- TODO: don't use error
-        Nothing    -> error "no `main` found"
+        Nothing   -> return ()
         Just main -> do
             -- and then, run `main`
             awaitForever $ \obj -> do

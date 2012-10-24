@@ -11,5 +11,3 @@ print : fib 1;
 print : fib 2;
 print : fib 10;
 print : fib 20;
-
-exit ();
