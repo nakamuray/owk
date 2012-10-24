@@ -3,8 +3,11 @@ module Owk.Namespace
   ( module Owk.Type
 
   , fromList
+  , toHash
   , create
   , define
+  , currentNamepace
+  , extractGlobal
   , lookup
   , lookupIO
   , insertIO
@@ -12,7 +15,7 @@ module Owk.Namespace
 
 import Prelude hiding (lookup)
 import Control.Concurrent.STM (STM, atomically)
-import Control.Concurrent.STM.TVar (newTVarIO, readTVar, writeTVar)
+import Control.Concurrent.STM.TVar (newTVarIO, readTVar, readTVarIO, writeTVar)
 import Control.Monad.Reader (ask, asks)
 import Data.Maybe (isJust)
 import Data.Monoid ((<>))
@@ -27,6 +30,9 @@ import Owk.Type as Type
 
 fromList :: [(Text, Object)] -> IO Namespace
 fromList l = newTVarIO $ H.fromList l
+
+toHash :: Namespace -> IO (H.HashMap Text Object)
+toHash n = readTVarIO n
 
 create :: Scope -> IO Scope
 create parent = do
@@ -54,6 +60,10 @@ currentNamepace (Local _ n) = n
 parentScope :: Scope -> Maybe Scope
 parentScope (Global _)  = Nothing
 parentScope (Local s _) = Just s
+
+extractGlobal :: Scope -> Scope
+extractGlobal g@(Global _) = g
+extractGlobal (Local p _) = extractGlobal p
 
 lookup :: Text -> Owk Object
 lookup n = do

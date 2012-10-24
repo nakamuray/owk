@@ -16,6 +16,7 @@ import qualified Data.Vector as V
 import qualified Data.Vector.Algorithms.Intro as VI
 
 import Owk.Interpreter
+import Owk.Module
 import Owk.Type
 import Owk.Util
 
@@ -69,6 +70,8 @@ builtins =
     , ("throw", builtin1M throw)
     , ("next", builtin $ const next)
     , ("exit", builtin exit_)
+
+    , ("import", builtin1M import_')
     ]
 
 
@@ -246,6 +249,10 @@ exit_ :: Function
 exit_ (Number (I i):_) = exit $ fromInteger i
 exit_ (Number (D d):_) = exit $ error "exit with Double: not implemented" d
 exit_ _ = exit 0
+
+import_' :: Object -> Owk Object
+import_' (String t) = import_ $ T.unpack $ T.replace "." "/" t <> ".owk"
+import_' o = exception $ String $ "import: expect string but " <> showText o
 
 
 -- helper functions
