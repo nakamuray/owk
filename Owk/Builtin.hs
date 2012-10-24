@@ -9,6 +9,7 @@ import Control.Monad.Error (catchError)
 import Data.Maybe (isJust)
 import Data.Monoid ((<>))
 import Data.Text.ICU (regex', find)
+import System.FilePath ((</>), (<.>), dropFileName, joinPath)
 
 import qualified Data.HashMap.Strict as H
 import qualified Data.Text as T
@@ -19,6 +20,7 @@ import Owk.Interpreter
 import Owk.Module
 import Owk.Type
 import Owk.Util
+import qualified Owk.Namespace as Namespace
 
 builtins :: [(T.Text, Object)]
 builtins =
@@ -251,7 +253,11 @@ exit_ (Number (D d):_) = exit $ error "exit with Double: not implemented" d
 exit_ _ = exit 0
 
 import_' :: Object -> Owk Object
-import_' (String t) = import_ $ T.unpack $ T.replace "." "/" t <> ".owk"
+import_' (String t) = do
+    String myFname <- str <$> Namespace.lookup "__file__"
+    let myDirname = dropFileName $ T.unpack myFname
+        fname = myDirname </> joinPath (map T.unpack $ T.split (=='.') t) <.> ".owk"
+    import_ fname
 import_' o = exception $ String $ "import: expect string but " <> showText o
 
 

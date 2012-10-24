@@ -25,6 +25,7 @@ executable owk
                      , bytestring
                      , conduit
                      , containers
+                     , filepath
                      , mtl
                      , old-locale
                      , parsec
@@ -52,6 +53,7 @@ test-suite test-owk
                      , bytestring
                      , conduit
                      , containers
+                     , filepath
                      , mtl
                      , old-locale
                      , parsec
