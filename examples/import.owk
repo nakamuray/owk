@@ -1,0 +1,5 @@
+# import `module/hello.owk` and bind it's namespace to `m`
+m = import "module.hello"
+
+# call function defined in the module
+m.hello ()
