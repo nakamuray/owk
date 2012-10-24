@@ -18,7 +18,9 @@ import_ fpath = do
     case ret of
         Left e  -> exception $ String $ T.pack e
         Right prog -> do
-            local (const s) $ interpret_ prog
+            local (const s) $ do
+                Namespace.define "__file__" $ String (T.pack fpath)
+                interpret_ prog
             h <- liftIO $ Namespace.toHash (Namespace.currentNamepace s)
             return $ Dict h
 
