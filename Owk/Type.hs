@@ -10,6 +10,7 @@ module Owk.Type
     , Namespace
 
     , runOwk
+    , runOwk'
 
     , throw
     , exit
@@ -205,8 +206,11 @@ instance Ord Object where
     Undef `compare` Number _ = LT
     Undef `compare` Bool _ = LT
 
-runOwk :: Owk () -> Namespace -> Conduit Object IO [Object]
-runOwk (OwkT o) n = do
+runOwk :: Owk a -> Namespace -> Conduit Object IO [Object]
+runOwk o n = runOwk' o n >> return ()
+
+runOwk' :: Owk a -> Namespace -> OwkPipe a
+runOwk' (OwkT o) n = do
     ret <- runReaderT (runErrorT o) (Global n)
     case ret of
         Left  e -> error $ show e
