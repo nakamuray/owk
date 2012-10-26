@@ -42,9 +42,12 @@ case_function_2 = parseOwk "<test>" "x, y -> { 1 }" @?= Right (Program [Function
 
 case_variable_0 = parseOwk "<test>" "x" @?= Right (Program [Variable "x"])
 
-case_define_0 = parseOwk "<test>" "x = 42" @?= Right (Program [Define "x" (Number (I 42))])
-case_define_1 = parseOwk "<test>" "x = { 42 }" @?= Right (Program [Define "x" (Function [] [(Number (I 42))])])
-case_define_2 = parseOwk "<test>" "x = $ -> { 42 }" @?= Right (Program [Define "x" (Function ["$"] [(Number (I 42))])])
+case_define_0 = parseOwk "<test>" "x = 42" @?= Right (Program [Define (PVariable "x") (Number (I 42))])
+case_define_1 = parseOwk "<test>" "x = { 42 }" @?= Right (Program [Define (PVariable "x") (Function [] [(Number (I 42))])])
+case_define_2 = parseOwk "<test>" "x = $ -> { 42 }" @?= Right (Program [Define (PVariable "x") (Function ["$"] [(Number (I 42))])])
+case_define_3 = parseOwk "<test>" "[x, y] = [1, 2]" @?= Right (Program [Define (PList [PVariable "x", PVariable "y"]) (List [Number (I 1), Number (I 2)])])
+case_define_4 = parseOwk "<test>" "[1, y] = [1, 2]" @?= Right (Program [Define (PList [PNumber (I 1), PVariable "y"]) (List [Number (I 1), Number (I 2)])])
+case_define_5 = parseOwk "<test>" "{ user => { name => n } } = x" @?= Right (Program [Define (PDict [("user", PDict [("name", PVariable "n")])]) (Variable "x")])
 
 case_operator_0 = parseOwk "<test>" "1 + 2" @?= Right (Program [FuncCall (Variable "__add__") [Number (I 1), Number (I 2)]])
 

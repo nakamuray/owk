@@ -137,7 +137,7 @@ funcParams = option [] (try varName `sepBy1` comma <* symbol "->")
     <?> "function parameters"
 
 define :: Parser Expression
-define = Define <$> varName <* symbol "=" <*> expression
+define = Define <$> pattern <* symbol "=" <*> expression
     <?> "define"
 
 variable :: Parser Expression
@@ -145,11 +145,17 @@ variable = Variable <$> varName
     <?> "variable"
 
 string_ :: Parser Expression
-string_ = String . T.pack <$> p_string
+string_ = String <$> string_'
+
+string_' :: Parser T.Text
+string_' = T.pack <$> p_string
     <?> "string"
 
 number :: Parser Expression
-number = Number <$> do
+number = Number <$> number'
+
+number' :: Parser Number
+number' = do
     d <- many1 digit
     mdot <- optionMaybe $ char '.'
     case mdot of
@@ -160,10 +166,16 @@ number = Number <$> do
   <?> "number"
 
 list :: Parser Expression
-list = flip label "list" $ List <$> (brackets $ whiteSpace' *> lexeme' expression `sepEndBy` lexeme' comma)
+list = List <$> makeListParser expression
+
+makeListParser :: Parser a -> Parser [a]
+makeListParser p = flip label "list" $ (brackets $ whiteSpace' *> lexeme' p `sepEndBy` lexeme' comma)
 
 dict :: Parser Expression
-dict = flip label "dict" $ Dict <$> (braces $ whiteSpace' *> kv `sepEndBy` lexeme' comma)
+dict = Dict <$> makeDictParser expression
+
+makeDictParser :: Parser a -> Parser [(T.Text, a)]
+makeDictParser p = flip label "dict" $ (braces $ whiteSpace' *> kv `sepEndBy` lexeme' comma)
   where
     kv = do
         whiteSpace'
@@ -171,9 +183,27 @@ dict = flip label "dict" $ Dict <$> (braces $ whiteSpace' *> kv `sepEndBy` lexem
         whiteSpace'
         symbol "=>"
         whiteSpace'
-        v <- expression
+        v <- p
         whiteSpace'
         return (k, v)
+
+pattern :: Parser Pattern
+pattern = pVariable <|> pString <|> pNumber <|> pList <|> pDict
+
+pVariable :: Parser Pattern
+pVariable = PVariable <$> varName
+
+pString :: Parser Pattern
+pString = PString <$> string_'
+
+pNumber :: Parser Pattern
+pNumber = PNumber <$> number'
+
+pList :: Parser Pattern
+pList = PList <$> makeListParser pattern
+
+pDict :: Parser Pattern
+pDict = PDict <$> makeDictParser pattern
 
 varName :: Parser T.Text
 varName = lexeme $ do

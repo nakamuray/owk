@@ -56,7 +56,7 @@ owkMain fname script =
         -- TODO: don't use error, use conduit's error system
         Left e     -> error e
         Right prog ->
-            let prog' = AST.Program [AST.Define "main" $ AST.Function ["$"] $ unProg prog]
+            let prog' = AST.Program [AST.Define (AST.PVariable "main") $ AST.Function ["$"] $ unProg prog]
             in conduitOwkProgram fname prog'
   where
     unProg (AST.Program es) = es

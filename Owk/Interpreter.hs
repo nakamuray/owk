@@ -2,9 +2,10 @@
 module Owk.Interpreter where
 
 import Control.Applicative ((<$>))
-import Control.Monad (foldM)
+import Control.Monad (foldM, forM)
 import Control.Monad.Reader (MonadReader, ask, local)
 import Data.Monoid ((<>))
+import Data.Text (Text)
 
 import qualified Data.HashMap.Strict as H
 import qualified Data.Vector as V
@@ -29,9 +30,13 @@ expr (AST.Function params es) = do
         ns <- liftIO $ Namespace.fromList $ zip (params ++ ["_"]) (args ++ repeat Type.Undef)
         let scope = Local s ns
         local (const scope) $ foldM (const expr) Type.Undef es
-expr (Define name e) = do
+expr (Define p e) = do
     v <- expr e
-    define name v
+    case match p v of
+        Nothing -> return Type.Undef
+        Just ms -> do
+            mapM_ (uncurry define) ms
+            return v
 expr (FuncCall efunc eargs) = do
     func <- expr efunc
     args <- mapM expr eargs
@@ -68,3 +73,31 @@ funcCall (Type.Dict h) [Type.List v]
         in return $ Type.Dict $ H.insert key' val h
 funcCall (Type.Dict _) _ = exception $ Type.String $ "dict only accept 1 other dict"
 funcCall obj _ = exception $ Type.String $ "not a function: " <> showText obj
+
+match :: Pattern -> Object -> Maybe [(Text, Object)]
+match (PVariable v) o = Just [(v, o)]
+match (PString p) (Type.String t)
+    | p == t = Just []
+    | otherwise = Nothing
+match (PNumber p) (Type.Number n)
+    | p == n = Just []
+    | otherwise = Nothing
+match (PList ps) (Type.List os) = matchList ps $ V.toList os
+match (PDict ps) (Type.Dict oh) = matchHash ps oh
+match _ _ = Nothing
+
+matchList :: [Pattern] -> [Object] -> Maybe [(Text, Object)]
+matchList (p:ps) (o:os) = do
+    m <- match p o
+    ms <- matchList ps os
+    return (m ++ ms)
+matchList [] [] = Just []
+matchList _ _ = Nothing
+
+matchHash :: [(Text, Pattern)] -> H.HashMap Text Object -> Maybe [(Text, Object)]
+matchHash ps oh = do
+    mss <- forM ps $ \(t, p) ->
+        case H.lookup t oh of
+            Just o  -> match p o
+            Nothing -> Nothing
+    return $ concat mss

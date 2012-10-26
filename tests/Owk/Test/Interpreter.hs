@@ -14,6 +14,8 @@ import Owk.Interpreter
 import Owk.Type as Type
 import Owk.Test.Util
 
+import qualified Owk.Namespace as Namespace
+
 import qualified Data.HashMap.Strict as H
 import qualified Data.Vector as V
 
@@ -58,3 +60,56 @@ case_dict_2 = testOwk_ $ do
     let d = Type.Dict $ H.fromList [("key1", Type.String "value1"), ("key2", Type.String "value2")]
     d' <- funcCall d [Type.List $ V.fromList [Type.String "key3", Type.String "value3"]]
     liftIO $ d' @?= Type.Dict (H.fromList [("key2", Type.String "value2"), ("key3", Type.String "value3"), ("key1", Type.String "value1")])
+
+case_define_1 = testOwk_ $ do
+    ret <- expr $ Define (PVariable "x") (AST.String "hello")
+    v <- Namespace.lookup "x"
+    liftIO $ ret @?= Type.String "hello"
+    liftIO $ v @?= Type.String "hello"
+
+case_define_2 = testOwk_ $ do
+    ret <- expr $ Define (PVariable "x") (AST.String "hello")
+    x <- Namespace.lookup "x"
+    liftIO $ ret @?= Type.String "hello"
+    liftIO $ x @?= Type.String "hello"
+
+case_define_3 = testOwk_ $ do
+    ret <- expr $ Define (PList [PVariable "x", PVariable "y"]) (AST.List [AST.String "hello", AST.String "world"])
+    x <- Namespace.lookup "x"
+    y <- Namespace.lookup "y"
+    liftIO $ ret @?= Type.List (V.fromList [Type.String "hello", Type.String "world"])
+    liftIO $ x @?= Type.String "hello"
+    liftIO $ y @?= Type.String "world"
+
+case_define_4 = testOwk_ $ do
+    ret <- expr $ Define (PList [PVariable "x"]) (AST.List [AST.String "hello", AST.String "world"])
+    x <- Namespace.lookup "x"
+    liftIO $ ret @?= Type.Undef
+    liftIO $ x @?= Type.Undef
+
+case_define_5 = testOwk_ $ do
+    ret <- expr $ Define (PList [PVariable "x", PString "world"]) (AST.List [AST.String "hello", AST.String "world"])
+    x <- Namespace.lookup "x"
+    liftIO $ ret @?= Type.List (V.fromList [Type.String "hello", Type.String "world"])
+    liftIO $ x @?= Type.String "hello"
+
+case_define_6 = testOwk_ $ do
+    ret <- expr $ Define (PList [PVariable "x", PString "world!"]) (AST.List [AST.String "hello", AST.String "world"])
+    x <- Namespace.lookup "x"
+    liftIO $ ret @?= Type.Undef
+    liftIO $ x @?= Type.Undef
+
+case_define_7 = testOwk_ $ do
+    ret <- expr $ Define (PDict [("kx", PVariable "x"), ("ky", PVariable "y")]) (AST.Dict [("kx", AST.String "hello"), ("ky", AST.String "world")])
+    x <- Namespace.lookup "x"
+    y <- Namespace.lookup "y"
+    liftIO $ ret @?= Type.Dict (H.fromList [("kx", Type.String "hello"), ("ky", Type.String "world")])
+    liftIO $ x @?= Type.String "hello"
+    liftIO $ y @?= Type.String "world"
+
+case_define_8 = testOwk_ $ do
+    ret <- expr $ Define (PDict [("user", PDict [("name", PVariable "n")])])
+                         (AST.Dict [("user", AST.Dict [("name", AST.String "nakamuray"), ("value", AST.Number (I 100))]), ("text", AST.String "hello world")])
+    n <- Namespace.lookup "n"
+    liftIO $ ret @?= (Type.Dict $ H.fromList [("user", Type.Dict $ H.fromList [("name", Type.String "nakamuray"), ("value", Type.Number (I 100))]), ("text", Type.String "hello world")])
+    liftIO $ n @?= Type.String "nakamuray"
