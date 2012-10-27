@@ -1,0 +1,25 @@
+if true: then {
+  print "ok"
+}: else {
+  print "ng"
+}
+
+if false: then {
+  print "ok"
+}: else {
+  print "ng"
+}
+
+
+case 0: \
+    0 -> { print "zero" } \
+  | n -> { print n }
+
+case 10: \
+    0 -> { print "zero" } \
+  | n -> { print n }
+
+
+for [1, 2, 3]: i -> {
+  print i
+}
