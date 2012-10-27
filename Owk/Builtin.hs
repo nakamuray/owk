@@ -64,6 +64,7 @@ builtins =
     , ("if", builtin1M if_)
     , ("then", builtin1M then_)
     , ("else", builtin1M else_)
+    , ("case", builtin1M case_)
     , ("for", builtin1M for)
     , ("while", builtin1M while)
 
@@ -181,6 +182,9 @@ then_ block = return . Function $ \elseBlock ->
             _          -> error "bool should return Bool only"
 
 else_ block = return block
+
+case_ :: Function
+case_ o = return . Function $ \block -> funcCall block o
 
 for :: Function
 for (List v) = return . Function $ \block -> V.foldM (\_ obj -> funcCall block obj) Undef v
