@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternGuards #-}
 module Owk.Builtin where
 
 import Prelude hiding (print)
@@ -27,31 +28,31 @@ builtins =
     [ ("true", Bool True)
     , ("false", Bool False)
     , ("undef", Undef)
-    , ("list", builtin0 list)
-    , ("str", builtin0 str)
-    , ("num", builtin0 num)
-    , ("bool", builtin0 bool)
-    , ("ref", Function $ \(obj:_) -> Ref <$> ref obj)
+    , ("list", builtin1 list)
+    , ("str", builtin1 str)
+    , ("num", builtin1 num)
+    , ("bool", builtin1 bool)
+    , ("ref", Function $ \obj -> Ref <$> ref obj)
 
     , ("sort", builtin1M sort)
 
       -- operators
-    , ("__add__", builtin2M __add__)
-    , ("__app__", builtin __app__)
-    , ("__div__", builtin __div__)
-    , ("__get__", builtin __get__)
-    , ("__mul__", builtin __mul__)
-    , ("__num__", builtin0 num)
+    , ("__add__", numop (+))
+    , ("__app__", builtin2M __app__)
+    , ("__div__", numop (/))
+    , ("__get__", builtin1M __get__)
+    , ("__mul__", numop (*))
+    , ("__num__", builtin1 num)
     , ("__neg__", builtin1M __neg__)
-    , ("__sub__", builtin __sub__)
-    , ("__mod__", builtin __mod__)
-    , ("__gt__", builtin __gt__)
-    , ("__lt__", builtin __lt__)
-    , ("__ge__", builtin __ge__)
-    , ("__le__", builtin __le__)
-    , ("__eq__", builtin __eq__)
-    , ("__nq__", builtin __nq__)
-    , ("__not__", builtin0 __not__)
+    , ("__sub__", numop (flip subtract))
+    , ("__mod__", numop (undefined))
+    , ("__gt__", cmpop (>))
+    , ("__lt__", cmpop (<))
+    , ("__ge__", cmpop (>=))
+    , ("__le__", cmpop (<=))
+    , ("__eq__", cmpop (==))
+    , ("__nq__", cmpop (/=))
+    , ("__not__", builtin1 __not__)
     , ("__and__", builtin2 __and__)
     , ("__or__", builtin2 __or__)
     , ("__if__", builtin2M __if__)
@@ -60,18 +61,18 @@ builtins =
     , ("__nmatch__", builtin2M __nmatch__)
 
     -- controls
-    , ("if", builtin if_)
-    , ("then", builtin then_)
-    , ("else", builtin else_)
-    , ("for", builtin for)
-    , ("while", builtin while)
+    , ("if", builtin1M if_)
+    , ("then", builtin1M then_)
+    , ("else", builtin1M else_)
+    , ("for", builtin1M for)
+    , ("while", builtin1M while)
 
-    , ("print", builtin print)
-    , ("getobj", builtin getobj)
-    , ("catch", builtin catch_)
+    , ("print", builtin1M print)
+    , ("getobj", builtin1M getobj)
+    , ("catch", builtin1M catch_)
     , ("throw", builtin1M throw)
-    , ("next", builtin $ const next)
-    , ("exit", builtin exit_)
+    , ("next", builtin1M $ const next)
+    , ("exit", builtin1M exit_)
 
     , ("import", builtin1M import_')
     ]
@@ -103,44 +104,12 @@ __add__ l@(List _) Undef = __add__ l (list Undef)
 __add__ Undef r@(List _) = __add__ (list Undef) r
 __add__ l r = exception $ String $ "__add__: type mismatch: " <> showText l <> " and " <> showText r
 
-__app__ :: Function
-__app__ (obj:args) = funcCall obj args
-__app__ [] = error "should not be reached"
-
-__div__ :: Function
-__div__ = numop (/)
-
-__mul__ :: Function
-__mul__ = numop (*)
+__app__ :: Object -> Object -> Owk Object
+__app__ obj arg = funcCall obj arg
 
 __neg__ :: Object -> Owk Object
 __neg__ (Number n) = return $ Number $ -n
 __neg__ obj = exception $ String $ "not a number: " <> showText obj
-
-__sub__ :: Function
-__sub__ = numop (flip subtract)
-
-__mod__ :: Function
---__mod__ = numop mod
-__mod__ = undefined
-
-__gt__ :: Function
-__gt__ = mkCmp (>)
-
-__lt__ :: Function
-__lt__ = mkCmp (<)
-
-__ge__ :: Function
-__ge__ = mkCmp (>=)
-
-__le__ :: Function
-__le__ = mkCmp (<=)
-
-__eq__ :: Function
-__eq__ = mkCmp (==)
-
-__nq__ :: Function
-__nq__ = mkCmp (/=)
 
 __not__ :: Object -> Object
 __not__ obj =
@@ -157,16 +126,20 @@ __or__ _ right = right
 
 
 __get__ :: Function
-__get__ (Undef:_) = return Undef
-__get__ (Dict h:String name:names@(String _:_)) = __get__ $ H.lookupDefault Undef name h : names
-__get__ (Dict h:String name:_) = return $ H.lookupDefault Undef name h
-__get__ (obj:_) = exception $ String $ "__get__: not a Dict: " <> showText obj
-__get__  [] = error "should not be reached"
+__get__ (List v) = __get__' $ V.toList v
+__get__ _ = return Undef
+
+__get__' :: [Object] -> Owk Object
+__get__' (Undef:_) = return Undef
+__get__' (Dict h:String name:names@(String _:_)) = __get__' $ H.lookupDefault Undef name h : names
+__get__' (Dict h:String name:_) = return $ H.lookupDefault Undef name h
+__get__' (obj:_) = exception $ String $ "__get__: not a Dict: " <> showText obj
+__get__'  [] = error "should not be reached"
 
 __if__ :: Object -> Object -> Owk Object
 __if__ b block =
     case bool b of
-        Bool True  -> funcCall block []
+        Bool True  -> funcCall block unit
         Bool False -> return Undef
         _          -> error "bool should return Bool only"
 
@@ -198,39 +171,38 @@ __nmatch__ t pat = do
 --   print "false"
 -- }
 if_, then_, else_ :: Function
-if_ (b:_) = return . Function $ \(thenElseBlock:_) -> funcCall thenElseBlock [b]
-if_ [] = error "should not be reached"
+if_ b = return . Function $ \thenElseBlock -> funcCall thenElseBlock b
 
-then_ (block:_) = return . Function $ \(elseBlock:_) ->
-    return . Function $ \(b:_) ->
+then_ block = return . Function $ \elseBlock ->
+    return . Function $ \b ->
         case bool b of
-            Bool True  -> funcCall block []
-            Bool False -> funcCall elseBlock []
+            Bool True  -> funcCall block unit
+            Bool False -> funcCall elseBlock unit
             _          -> error "bool should return Bool only"
-then_ [] = error "should not be reached"
 
-else_ (block:_) = return block
-else_ [] = error "should not be reached"
+else_ block = return block
 
 for :: Function
-for (List v:_) = return . Function $ \(block:_) -> V.foldM (\_ obj -> funcCall block [obj]) Undef v
-for (d@(Dict _):args) = for (list d:args)
-for (Undef:args) = for (list Undef:args)
+for (List v) = return . Function $ \block -> V.foldM (\_ obj -> funcCall block obj) Undef v
+for d@(Dict _) = for (list d)
+for Undef = for (list Undef)
 for _ = exception $ String "for: not implemented"
 
 while :: Function
-while (cond:_) = return . Function $ \(block:_) -> go block Undef
+while cond = return . Function $ \block -> go block Undef
   where
     go block ret = do
-        Bool b <- bool <$> funcCall cond []
+        Bool b <- bool <$> funcCall cond unit
         if b
-          then funcCall block [] >>= go block
+          then funcCall block unit >>= go block
           else return ret
-while [] = error "should not be reached"
 
 print :: Function
-print args = do
-    lift $ yield args
+print (Tuple os) = do
+    lift $ yield os
+    return $ Bool True
+print o = do
+    lift $ yield [o]
     return $ Bool True
 
 getobj :: Function
@@ -241,15 +213,14 @@ getobj _ = do
         Nothing -> return Undef
 
 catch_ :: Function
-catch_ (body:_) = funcCall body [] `catchError` catch'
+catch_ body = funcCall body unit `catchError` catch'
   where
     catch' (Return obj) = return obj
     catch' e = throwError e
-catch_ [] = error "should not be reached"
 
 exit_ :: Function
-exit_ (Number (I i):_) = exit $ fromInteger i
-exit_ (Number (D d):_) = exit $ error "exit with Double: not implemented" d
+exit_ (Number (I i)) = exit $ fromInteger i
+exit_ (Number (D d)) = exit $ error "exit with Double: not implemented" d
 exit_ _ = exit 0
 
 import_' :: Object -> Owk Object
@@ -262,48 +233,43 @@ import_' o = exception $ String $ "import: expect string but " <> showText o
 
 
 -- helper functions
-numop :: (Number -> Number -> Number) -> Function
-numop op (Number l:Number r:_) = return $ Number $ l `op` r
-numop op (n@(Number _):Undef:_) = numop op [n, num Undef]
-numop op (Undef:n@(Number _):_) = numop op [num Undef, n]
-numop op (n@(Number _):[]) = numop op [n, num Undef]
-numop _ (Number _:obj) = exception $ String $ "not a number: " <> showText obj
-numop _ (obj:_) = exception $ String $ "not a number: " <> showText obj
-numop _ [] = error "should not be reached"
+numop :: (Number -> Number -> Number) -> Object
+numop op = builtin2M numop'
+  where
+    numop' :: Object -> Object -> Owk Object
+    numop' (Number l) (Number r) = return $ Number $ l `op` r
+    numop' n@(Number _) Undef = numop' n (num Undef)
+    numop' Undef n@(Number _) = numop' (num Undef) n
+    numop' obj (Number _) = exception $ String $ "not a number: " <> showText obj
+    numop' _ (obj) = exception $ String $ "not a number: " <> showText obj
 
-mkOp :: (Object -> Object -> Object) -> Function
-mkOp op (left:right:_) = return $ op left right
-mkOp op [left] = mkOp op [left, Undef]
-mkOp _ [] = error "should not be reached"
-
-mkCmp :: (Object -> Object -> Bool) -> Function
-mkCmp op = mkOp $ \left right -> Bool $ op left right
+cmpop :: (Object -> Object -> Bool) -> Object
+cmpop op = builtin2 $ \left right -> Bool $ op left right
 
 isTrue :: Object -> Bool
 isTrue (Bool True) = True
 isTrue (Bool False) = False
 isTrue obj = isTrue $ bool obj
 
-builtin :: Function -> Object
-builtin f = Function f
-
 -- create `Function` from Object to Object function
-builtin0 :: (Object -> Object) -> Object
-builtin0 f = Function $ \(arg:_) -> return $ f arg
+builtin1 :: (Object -> Object) -> Object
+builtin1 f = Function $ return . f
 
 builtin1M :: (Object -> Owk Object) -> Object
-builtin1M f = Function $ \(arg:_) -> f arg
+builtin1M f = Function f
 
 builtin2 :: (Object -> Object -> Object) -> Object
 builtin2 f = Function go
   where
-    go (arg1:arg2:_) = return $ f arg1 arg2
-    go [arg1] = return $ f arg1 Undef
-    go [] = error "should no be reached"
+    go (Tuple os)
+        | arg1:arg2:[] <- os = return $ f arg1 arg2
+        | arg1:[] <- os = return $ f arg1 Undef
+    go arg = return $ f arg Undef
 
 builtin2M :: (Object -> Object -> Owk Object) -> Object
 builtin2M f = Function go
   where
-    go (arg1:arg2:_) = f arg1 arg2
-    go [arg1] = f arg1 Undef
-    go [] = error "should no be reached"
+    go (Tuple os)
+        | arg1:arg2:[] <- os = f arg1 arg2
+        | arg1:[] <- os = f arg1 Undef
+    go arg = f arg unit

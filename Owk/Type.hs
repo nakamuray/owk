@@ -23,6 +23,7 @@ module Owk.Type
     , str'
     , num
     , bool
+    , unit
 
     , ref
     , readRef
@@ -77,6 +78,7 @@ type Namespace = TVar (H.HashMap Text Object)
 
 data Object = Dict (H.HashMap Text Object)
             | List (Vector Object)
+            | Tuple [Object]
             | String !Text
             | Number !Number
             | Bool !Bool
@@ -85,12 +87,13 @@ data Object = Dict (H.HashMap Text Object)
             | Undef
             | forall a. (Typeable a, Show a) => HaskellData a
 
-type Function = [Object] -> Owk Object
+type Function = Object -> Owk Object
 type Ref = TVar Object
 
 instance Show Object where
     show (Dict o)     = "Dict " ++ show o
     show (List o)     = "List " ++ show o
+    show (Tuple o)    = "Tuple " ++ show o
     show (String o)   = "String " ++ show o
     show (Number o)   = "Number " ++ show o
     show (Bool o)     = "Bool " ++ show o
@@ -102,6 +105,7 @@ instance Show Object where
 instance Eq Object where
     Dict o1 == Dict o2 = o1 == o2
     List o1 == List o2 = o1 == o2
+    Tuple o1 == Tuple o2 = o1 == o2
     String o1 == String o2 = o1 == o2
     Number o1 == Number o2 = o1 == o2
     Bool o1 == Bool o2 = o1 == o2
@@ -117,6 +121,7 @@ instance Eq Object where
 instance Ord Object where
     HaskellData _ `compare` HaskellData _ = error "not implemented: how to compare haskell data?"
     Ref _ `compare` Ref _ = error "not implemented: how to compare refs?"
+    Tuple o1 `compare` Tuple o2 = o1 `compare` o2
     String o1 `compare` String o2 = o1 `compare` o2
     List o1 `compare` List o2 = o1 `compare` o2
     Function _ `compare` Function _ = error "not implemented: how to compare function?"
@@ -126,6 +131,7 @@ instance Ord Object where
     Undef `compare` Undef = EQ
 
     HaskellData _ `compare` Ref _ = GT
+    HaskellData _ `compare` Tuple _ = GT
     HaskellData _ `compare` String _ = GT
     HaskellData _ `compare` List _ = GT
     HaskellData _ `compare` Function _ = GT
@@ -135,6 +141,7 @@ instance Ord Object where
     HaskellData _ `compare` Undef = GT
 
     Ref _ `compare` HaskellData _ = LT
+    Ref _ `compare` Tuple _ = GT
     Ref _ `compare` String _ = GT
     Ref _ `compare` List _ = GT
     Ref _ `compare` Function _ = GT
@@ -143,8 +150,19 @@ instance Ord Object where
     Ref _ `compare` Bool _ = GT
     Ref _ `compare` Undef = GT
 
+    Tuple _ `compare` HaskellData _ = LT
+    Tuple _ `compare` Ref _ = LT
+    Tuple _ `compare` String _ = GT
+    Tuple _ `compare` List _ = GT
+    Tuple _ `compare` Function _ = GT
+    Tuple _ `compare` Dict _ = GT
+    Tuple _ `compare` Number _ = GT
+    Tuple _ `compare` Bool _ = GT
+    Tuple _ `compare` Undef = GT
+
     String _ `compare` HaskellData _ = LT
     String _ `compare` Ref _ = LT
+    String _ `compare` Tuple _ = LT
     String _ `compare` List _ = GT
     String _ `compare` Function _ = GT
     String _ `compare` Dict _ = GT
@@ -154,6 +172,7 @@ instance Ord Object where
 
     List _ `compare` HaskellData _ = LT
     List _ `compare` Ref _ = LT
+    List _ `compare` Tuple _ = LT
     List _ `compare` String _ = LT
     List _ `compare` Function _ = GT
     List _ `compare` Dict _ = GT
@@ -163,6 +182,7 @@ instance Ord Object where
 
     Function _ `compare` HaskellData _ = LT
     Function _ `compare` Ref _ = LT
+    Function _ `compare` Tuple _ = LT
     Function _ `compare` String _ = LT
     Function _ `compare` List _ = LT
     Function _ `compare` Dict _ = GT
@@ -172,6 +192,7 @@ instance Ord Object where
 
     Dict _ `compare` HaskellData _ = LT
     Dict _ `compare` Ref _ = LT
+    Dict _ `compare` Tuple _ = LT
     Dict _ `compare` String _ = LT
     Dict _ `compare` Function _ = LT
     Dict _ `compare` List _ = LT
@@ -181,6 +202,7 @@ instance Ord Object where
 
     Number _ `compare` HaskellData _ = LT
     Number _ `compare` Ref _ = LT
+    Number _ `compare` Tuple _ = LT
     Number _ `compare` String _ = LT
     Number _ `compare` Function _ = LT
     Number _ `compare` List _ = LT
@@ -190,6 +212,7 @@ instance Ord Object where
 
     Bool _ `compare` HaskellData _ = LT
     Bool _ `compare` Ref _ = LT
+    Bool _ `compare` Tuple _ = LT
     Bool _ `compare` String _ = LT
     Bool _ `compare` Function _ = LT
     Bool _ `compare` List _ = LT
@@ -199,6 +222,7 @@ instance Ord Object where
 
     Undef `compare` HaskellData _ = LT
     Undef `compare` Ref _ = LT
+    Undef `compare` Tuple _ = LT
     Undef `compare` String _ = LT
     Undef `compare` Function _ = LT
     Undef `compare` List _ = LT
@@ -259,6 +283,7 @@ str' (Bool False) = "false"
 str' Undef = ""
 str' (Ref _) = "ref"
 str' (Function _) = "function"
+str' (Tuple os) = "(" <> T.intercalate ", " (map str' os) <> ")"
 str' (List v) = "[" <> T.intercalate ", " (map str' $ V.toList v) <> "]"
 str' (Dict h) = "{" <> T.intercalate ", " (map toKV $ H.toList h) <> "}"
   where
@@ -279,6 +304,9 @@ bool :: Object -> Object
 bool o@(Bool _) = o
 bool Undef = Bool False
 bool _ = Bool True
+
+unit :: Object
+unit = Tuple []
 
 
 ref :: Object -> Owk Ref

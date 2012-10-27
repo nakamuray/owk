@@ -91,10 +91,10 @@ table = [ [unary "-" "__neg__", unary "+" "__num__"]
         ]
 
 unary :: String -> T.Text -> Operator T.Text () Identity Expression
-unary  name fun       = Prefix (do{ reservedOp name; return $ \x -> FuncCall (Variable fun) [x] })
+unary  name fun       = Prefix (do{ reservedOp name; return $ \x -> FuncCall (Variable fun) x })
 
 binary :: String -> T.Text -> Assoc -> Operator T.Text () Identity Expression
-binary  name fun assoc = Infix (do{ reservedOp name; return $ \x y -> FuncCall (Variable fun) [x, y] }) assoc
+binary  name fun assoc = Infix (do{ reservedOp name; return $ \x y -> FuncCall (Variable fun) (Tuple [x, y]) }) assoc
 
 reservedOp :: String -> Parser ()
 reservedOp name =
@@ -107,33 +107,36 @@ reservedOp name =
 term :: Parser Expression
 term = flip label "term" $ lexeme $ do
     e <- term'
-    params <- option [] (try $ lexeme term' `sepBy1` comma)
-    case params of
-        [] -> return e
-        _  -> return $ FuncCall e params
+    mparam <- optionMaybe (try $ lexeme term')
+    case mparam of
+        Nothing     -> return e
+        Just param  -> return $ FuncCall e param
 
 term' :: Parser Expression
 term' = flip label "expressions without function call" $ do
-    e <- tryAll [ parens expression, undef, function, define, variable, string_, number, list, dict ]
+    e <- tryAll [ parens expression, unit, function, define, variable, string_, number, tuple, list, dict ]
     sub <- option [] $ try subscripts
     whiteSpace
     case sub of
         [] -> return e
-        sub' -> return $ FuncCall (Variable "__get__") $ e : (map String sub')
+        sub' -> return $ FuncCall (Variable "__get__") $ List $ e : (map String sub')
 
-undef :: Parser Expression
-undef = symbol "(" >> symbol ")" >> return Undef
+unit :: Parser Expression
+unit = symbol "(" >> symbol ")" >> return (Tuple [])
 
--- [ param, param -> ] { expression [; expression ...] }
+-- [ pattern -> ] { expression [; expression ...] } [ | [pattern -> ] { expression ...]
 function :: Parser Expression
-function = do
-    params <- funcParams
+function = Function <$> (function' `sepBy1` symbol "|")
+
+function' :: Parser (Pattern, [Expression])
+function' = do
+    pat <- funcPattern
     es <- braces block1
-    return $ Function params es
+    return $ (pat, es)
   <?> "function"
 
-funcParams :: Parser [T.Text]
-funcParams = option [] (try varName `sepBy1` comma <* symbol "->")
+funcPattern :: Parser Pattern
+funcPattern = option (PVariable "_") (try pattern <* symbol "->")
     <?> "function parameters"
 
 define :: Parser Expression
@@ -165,11 +168,14 @@ number' = do
         Nothing -> return $ I $ read d
   <?> "number"
 
+tuple :: Parser Expression
+tuple = Tuple <$> parens (makeListParser expression)
+
 list :: Parser Expression
-list = List <$> makeListParser expression
+list = List <$> brackets (makeListParser expression)
 
 makeListParser :: Parser a -> Parser [a]
-makeListParser p = flip label "list" $ (brackets $ whiteSpace' *> lexeme' p `sepEndBy` lexeme' comma)
+makeListParser p = flip label "list" $ (whiteSpace' *> lexeme' p `sepEndBy` lexeme' comma)
 
 dict :: Parser Expression
 dict = Dict <$> makeDictParser expression
@@ -188,7 +194,7 @@ makeDictParser p = flip label "dict" $ (braces $ whiteSpace' *> kv `sepEndBy` le
         return (k, v)
 
 pattern :: Parser Pattern
-pattern = pVariable <|> pString <|> pNumber <|> pList <|> pDict
+pattern = lexeme (pVariable <|> pString <|> pNumber <|> pTuple <|> pList <|> pDict)
 
 pVariable :: Parser Pattern
 pVariable = PVariable <$> varName
@@ -199,8 +205,11 @@ pString = PString <$> string_'
 pNumber :: Parser Pattern
 pNumber = PNumber <$> number'
 
+pTuple :: Parser Pattern
+pTuple = PTuple <$> parens (makeListParser pattern)
+
 pList :: Parser Pattern
-pList = PList <$> makeListParser pattern
+pList = PList <$> brackets (makeListParser pattern)
 
 pDict :: Parser Pattern
 pDict = PDict <$> makeDictParser pattern

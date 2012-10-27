@@ -35,15 +35,15 @@ case_list_1 = testOwk_ $ do
     liftIO $ l @?= Type.List (V.fromList [Type.String ""])
 
 case_list_2 = testOwk_ $ do
-    x <- funcCall (Type.List $ V.fromList [Type.String "x", Type.String "y", Type.String "z"]) [Type.Number $ I 0]
+    x <- funcCall (Type.List $ V.fromList [Type.String "x", Type.String "y", Type.String "z"]) (Type.Number $ I 0)
     liftIO $ x @?= Type.String "x"
-    y <- funcCall (Type.List $ V.fromList [Type.String "x", Type.String "y", Type.String "z"]) [Type.Number $ I 1]
+    y <- funcCall (Type.List $ V.fromList [Type.String "x", Type.String "y", Type.String "z"]) (Type.Number $ I 1)
     liftIO $ y @?= Type.String "y"
-    u <- funcCall (Type.List $ V.fromList [Type.String "x", Type.String "y", Type.String "z"]) [Type.Number $ I 10]
+    u <- funcCall (Type.List $ V.fromList [Type.String "x", Type.String "y", Type.String "z"]) (Type.Number $ I 10)
     liftIO $ u @?= Type.Undef
 
 case_list_3 = testOwk_ $ do
-    x <- funcCall (Type.List $ V.fromList [Type.String "x", Type.String "y", Type.String "z"]) [Type.List (V.fromList [Type.Number $ I 0])]
+    x <- funcCall (Type.List $ V.fromList [Type.String "x", Type.String "y", Type.String "z"]) (Type.List (V.fromList [Type.Number $ I 0]))
     liftIO $ x @?= Type.String "x"
 
 case_dict_0 = testOwk_ $ do
@@ -53,12 +53,12 @@ case_dict_0 = testOwk_ $ do
 case_dict_1 = testOwk_ $ do
     let d1 = Type.Dict $ H.fromList [("key1", Type.String "value1"), ("key2", Type.String "value2")]
         d2 = Type.Dict $ H.fromList [("key2", Type.String "VALUE2"), ("key3", Type.String "VALUE3")]
-    d <- funcCall d1 [d2]
+    d <- funcCall d1 d2
     liftIO $ d @?= Type.Dict (H.fromList [("key2", Type.String "VALUE2"), ("key3", Type.String "VALUE3"), ("key1", Type.String "value1")])
 
 case_dict_2 = testOwk_ $ do
     let d = Type.Dict $ H.fromList [("key1", Type.String "value1"), ("key2", Type.String "value2")]
-    d' <- funcCall d [Type.List $ V.fromList [Type.String "key3", Type.String "value3"]]
+    d' <- funcCall d $ Type.List $ V.fromList [Type.String "key3", Type.String "value3"]
     liftIO $ d' @?= Type.Dict (H.fromList [("key2", Type.String "value2"), ("key3", Type.String "value3"), ("key1", Type.String "value1")])
 
 case_define_1 = testOwk_ $ do

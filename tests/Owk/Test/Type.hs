@@ -34,6 +34,6 @@ case_list_1 = list Undef @=? List V.empty
 case_list_2 = list (Dict $ H.fromList [("key1", String "x"), ("key2", String "y"), ("key3", String "z")])
                 @=? (List $ V.fromList [String "key2", String "key3", String "key1"])
 
-_types = [Ref undefined, String "", List V.empty, Dict H.empty, Number (I 0), Bool True, Undef]
+_types = [Ref undefined, unit, String "", List V.empty, Dict H.empty, Number (I 0), Bool True, Undef]
 case_eq_0 = assertBool "each type should no equal" $ and [x /= y | (x, y) <- zip _types $ tail _types]
 case_ord_0 = assertBool "type ordering" $ and [x > y | (x, y) <- zip _types $ tail _types]

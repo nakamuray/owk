@@ -22,7 +22,7 @@ import Owk.Builtin (builtins)
 import Owk.Interpreter
 import Owk.Module
 import Owk.Module.Time (time)
-import Owk.Parser
+import Owk.Parser (parseOwk)
 import Owk.Type
 import qualified Owk.Namespace as Namespace
 
@@ -56,7 +56,7 @@ owkMain fname script =
         -- TODO: don't use error, use conduit's error system
         Left e     -> error e
         Right prog ->
-            let prog' = AST.Program [AST.Define (AST.PVariable "main") $ AST.Function ["$"] $ unProg prog]
+            let prog' = AST.Program [AST.Define (AST.PVariable "main") $ AST.Function [(AST.PVariable "$", unProg prog)]]
             in conduitOwkProgram fname prog'
   where
     unProg (AST.Program es) = es
@@ -72,11 +72,11 @@ conduitOwkProgram fname prog = do
         Just main -> do
             -- and then, run `main`
             awaitForever $ \obj -> do
-                runOwk (funcCall main [obj] `catchError` ignoreNext `catchError` catchExit >> return ()) n
+                runOwk (funcCall main obj `catchError` ignoreNext `catchError` catchExit >> return ()) n
                 return ()
             case H.lookup "end" h of
                 Just end -> do
-                    runOwk (funcCall end [] `catchError` ignoreNext `catchError` catchExit >> return ()) n
+                    runOwk (funcCall end unit `catchError` ignoreNext `catchError` catchExit >> return ()) n
                     return ()
                 Nothing  -> return ()
   where

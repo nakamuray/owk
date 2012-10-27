@@ -19,14 +19,14 @@ case_empty_0 = parseOwk "<test>" "" @?= Right (Program [])
 case_empty_1 = parseOwk "<test>" "\n\n" @?= Right (Program [])
 case_empty_2 = parseOwk "<test>" "# comment only" @?= Right (Program [])
 
-case_unit_0 = parseOwk "<test>" "()" @?= Right (Program [Undef])
+case_unit_0 = parseOwk "<test>" "()" @?= Right (Program [Tuple []])
 
 case_string_0 = parseOwk "<test>" "\"hello world\"" @?= Right (Program [String "hello world"])
 case_string_1 = parseOwk "<test>" "\"\\u3042\"" @?= Right (Program [String "あ"])
 
 case_number_0 = parseOwk "<test>" "100" @?= Right (Program [Number (I 100)])
 case_number_1 = parseOwk "<test>" "100.0" @?= Right (Program [Number (D 100.0)])
-case_number_2 = parseOwk "<test>" "-100" @?= Right (Program [FuncCall (Variable "__neg__") [Number (I 100)]])
+case_number_2 = parseOwk "<test>" "-100" @?= Right (Program [FuncCall (Variable "__neg__") (Number (I 100))])
 
 case_list_0 = parseOwk "<test>" "[]" @?= Right (Program [List []])
 case_list_1 = parseOwk "<test>" "[1]" @?= Right (Program [List [Number (I 1)]])
@@ -36,20 +36,23 @@ case_dict_0 = parseOwk "<test>" "{}" @?= Right (Program [Dict []])
 case_dict_1 = parseOwk "<test>" "{key => \"value\"}" @?= Right (Program [Dict [("key", String "value")]])
 case_dict_2 = parseOwk "<test>" "{key => \"value\", otherkey => \"other value\"}" @?= Right (Program [Dict [("key", String "value"), ("otherkey", String "other value")]])
 
-case_function_0 = parseOwk "<test>" "{ 1 }" @?= Right (Program [Function [] [Number (I 1)]])
-case_function_1 = parseOwk "<test>" "{ 1; 2 }" @?= Right (Program [Function [] [Number (I 1), Number (I 2)]])
-case_function_2 = parseOwk "<test>" "x, y -> { 1 }" @?= Right (Program [Function ["x", "y"] [Number (I 1)]])
+case_function_0 = parseOwk "<test>" "{ 1 }" @?= Right (Program [Function [(PVariable "_", [Number (I 1)])]])
+case_function_1 = parseOwk "<test>" "{ 1; 2 }" @?= Right (Program [Function [(PVariable "_", [Number (I 1), Number (I 2)])]])
+case_function_2 = parseOwk "<test>" "(x, y) -> { 1 }" @?= Right (Program [Function [(PTuple [PVariable "x", PVariable "y"], [Number (I 1)])]])
+case_function_3 = parseOwk "<test>" "0 -> { \"zero\" } | 1 -> { \"one\" } | n -> { n }"
+                      @?= Right (Program [Function [(PNumber (I 0), [String "zero"]), (PNumber (I 1), [String "one"]), (PVariable "n", [Variable "n"])]])
 
 case_variable_0 = parseOwk "<test>" "x" @?= Right (Program [Variable "x"])
 
 case_define_0 = parseOwk "<test>" "x = 42" @?= Right (Program [Define (PVariable "x") (Number (I 42))])
-case_define_1 = parseOwk "<test>" "x = { 42 }" @?= Right (Program [Define (PVariable "x") (Function [] [(Number (I 42))])])
-case_define_2 = parseOwk "<test>" "x = $ -> { 42 }" @?= Right (Program [Define (PVariable "x") (Function ["$"] [(Number (I 42))])])
+case_define_1 = parseOwk "<test>" "x = { 42 }" @?= Right (Program [Define (PVariable "x") (Function [(PVariable "_", [(Number (I 42))])])])
+case_define_2 = parseOwk "<test>" "x = $ -> { 42 }" @?= Right (Program [Define (PVariable "x") (Function [(PVariable "$", [(Number (I 42))])])])
 case_define_3 = parseOwk "<test>" "[x, y] = [1, 2]" @?= Right (Program [Define (PList [PVariable "x", PVariable "y"]) (List [Number (I 1), Number (I 2)])])
 case_define_4 = parseOwk "<test>" "[1, y] = [1, 2]" @?= Right (Program [Define (PList [PNumber (I 1), PVariable "y"]) (List [Number (I 1), Number (I 2)])])
 case_define_5 = parseOwk "<test>" "{ user => { name => n } } = x" @?= Right (Program [Define (PDict [("user", PDict [("name", PVariable "n")])]) (Variable "x")])
+case_define_6 = parseOwk "<test>" "0 = 0" @?= Right (Program [Define (PNumber (I 0)) (Number (I 0))])
 
-case_operator_0 = parseOwk "<test>" "1 + 2" @?= Right (Program [FuncCall (Variable "__add__") [Number (I 1), Number (I 2)]])
+case_operator_0 = parseOwk "<test>" "1 + 2" @?= Right (Program [FuncCall (Variable "__add__") (Tuple [Number (I 1), Number (I 2)])])
 
 case_newline_0 = parseOwk "<test>" "1; 2; 3" @=? parseOwk "<test>" "1\n2\n3\n"
 case_newline_1 = parseOwk "<test>" "1; 2; 3" @=? parseOwk "<test>" "1\n\n2\n\n3\n"

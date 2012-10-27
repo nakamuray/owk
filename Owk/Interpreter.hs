@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternGuards #-}
 module Owk.Interpreter where
 
 import Control.Applicative ((<$>))
@@ -24,12 +25,18 @@ interpret_ :: Program -> Owk ()
 interpret_ (Program es) = mapM_ expr es
 
 expr :: Expression -> Owk Object
-expr (AST.Function params es) = do
+expr (AST.Function pbs) = do
     s <- ask
-    return $ Type.Function $ \args -> do
-        ns <- liftIO $ Namespace.fromList $ zip (params ++ ["_"]) (args ++ repeat Type.Undef)
-        let scope = Local s ns
-        local (const scope) $ foldM (const expr) Type.Undef es
+    return $ Type.Function $ func s pbs
+  where
+    func _ [] _ = return $ Type.Undef
+    func s ((p, body) : pbs') v = do
+        case match p v of
+            Nothing -> func s pbs' v
+            Just ms -> do
+                ns <- liftIO $ Namespace.fromList ms
+                let scope = Local s ns
+                local (const scope) $ foldM (const expr) Type.Undef body
 expr (Define p e) = do
     v <- expr e
     case match p v of
@@ -37,32 +44,34 @@ expr (Define p e) = do
         Just ms -> do
             mapM_ (uncurry define) ms
             return v
-expr (FuncCall efunc eargs) = do
+expr (FuncCall efunc earg) = do
     func <- expr efunc
-    args <- mapM expr eargs
-    funcCall func args
+    arg <- expr earg
+    funcCall func arg
 expr (Variable name) = Namespace.lookup name
 expr (AST.String s) = return $ Type.String s
 expr (AST.Number n) = return $ Type.Number n
+expr (AST.Tuple es) = Type.Tuple <$> mapM expr es
 expr (AST.List es) = Type.List . V.fromList <$> mapM expr es
 expr (AST.Dict kvs) = Type.Dict . H.fromList <$> mapM (\(k, v) -> expr v >>= \v' -> return (k, v')) kvs
 expr AST.Undef = return Type.Undef
 
-funcCall :: Object -> [Object] -> Owk Object
-funcCall (Type.Function f) args = f args
+funcCall :: Object -> Object -> Owk Object
+funcCall (Type.Function f) arg = f arg
 funcCall (Type.Ref r) _ = readRef r
-funcCall (Type.List v) [Type.Number (I i)]
+funcCall (Type.List v) (Type.Number (I i))
     | fromInteger i < V.length v = return $ v V.! (fromInteger i)
     | otherwise = return Type.Undef
-funcCall (Type.List v) [Type.Number (I i), Type.Number (I j)] = return $ Type.List $ V.slice start count v
-  where
-    len = V.length v
-    start = max 0 $ min len $ fromInteger i
-    count = min (len - start) $ fromInteger j
-funcCall obj@(Type.List _) [Type.List v] = funcCall obj $ V.toList v
+funcCall (Type.List v) (Type.List args)
+    | [Type.Number (I i)] <- V.toList args = return $ v V.! (fromInteger i)
+    | [Type.Number (I i), Type.Number (I j)] <- V.toList args =
+        let len = V.length v
+            start = max 0 $ min len $ fromInteger i
+            count = min (len - start) $ fromInteger j
+        in return $ Type.List $ V.slice start count v
 funcCall (Type.List _) _ = exception $ Type.String $ "list only accept 1 or 2 numbers"
-funcCall (Type.Dict h) [Type.Dict i] = return $ Type.Dict $ H.union i h
-funcCall (Type.Dict h) [Type.List v]
+funcCall (Type.Dict h) (Type.Dict i) = return $ Type.Dict $ H.union i h
+funcCall (Type.Dict h) (Type.List v)
     | V.length v == 1 =
         let [key] = V.toList v
             Type.String key' = str key
@@ -82,6 +91,7 @@ match (PString p) (Type.String t)
 match (PNumber p) (Type.Number n)
     | p == n = Just []
     | otherwise = Nothing
+match (PTuple ps) (Type.Tuple os) = matchList ps os
 match (PList ps) (Type.List os) = matchList ps $ V.toList os
 match (PDict ps) (Type.Dict oh) = matchHash ps oh
 match _ _ = Nothing

@@ -55,6 +55,7 @@ instance FromJSON O.Object where
 instance ToJSON O.Object where
     toJSON (O.Dict h) = A.Object $ H.map toJSON h
     toJSON (O.List v) = A.Array $ V.map toJSON v
+    toJSON (O.Tuple os) = A.Array . V.fromList $ map toJSON os
     toJSON (O.String t) = A.String t
     toJSON (O.Number n) = A.Number n
     toJSON (O.Bool b) = A.Bool b
