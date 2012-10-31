@@ -116,14 +116,16 @@ Function
 関数です。
 
 ``pattern -> { block }`` の形で定義します。
+``block`` には複数の式を記述できます。
 ``pattern ->`` 部分は省略可能で、その場合 ``_ ->`` が補われます。
+また、 ``block`` が単一の式のみからなる場合は ``{ }`` を省略することができます。
 
 ``|`` で区切ることにより、複数のパターン・ブロックが記述できます。
 
 関数の戻り値は最後の式の値になります。
 
 関数呼び出しは ``func arg`` の形になります。
-複数の値を渡したい場合は Tuple を渡すことで代用します。
+複数の値を渡したい場合は Tuple を渡すか、カリー化された関数を定義することで代用します。
 
 なお、 owk においては0引数の関数呼び出しはできません。
 不要だとしても最低1つは引数を渡してください。
@@ -133,21 +135,27 @@ Function
   f = { print "hi" }
   f () # => hi
 
-  f2 = name -> { print("hi,", name) }
-  f2 "nakamuray" # => hi, nakamuray
+  f2 = _ -> print "hi"
+  f2 () # => hi
 
-  f3 = (x, y) -> { x * y }
-  print (f3(2, 3))
+  f3 = name -> { print("hi,", name) }
+  f3 "nakamuray" # => hi, nakamuray
 
-  f4 = i -> { i * 2 }
-  print (f4 10) # => 20
+  f4 = (x, y) -> { x * y }
+  print (f4(2, 3))
 
-  f5 = { _ * 2 }
-  print (f5 10) # => 20
+  f5 = x -> y -> { x * y }
+  print (f5(2, 3))
 
-  f6 = 0 -> { "zero" } | n -> { n }
-  print (f6 0) # => zero
-  print (f6 100) # => 100
+  f6 = i -> { i * 2 }
+  print (f6 10) # => 20
+
+  f7 = { _ * 2 }
+  print (f7 10) # => 20
+
+  f8 = 0 -> { "zero" } | n -> { n }
+  print (f8 0) # => zero
+  print (f8 100) # => 100
 
 Ref
 ~~~

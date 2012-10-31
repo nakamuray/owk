@@ -109,24 +109,32 @@ case_readme_function = do
         f = { print "hi" }
         f () # => hi
 
-        f2 = name -> { print("hi,", name) }
-        f2 "nakamuray" # => hi, nakamuray
+        f2 = _ -> print "hi"
+        f2 () # => hi
 
-        f3 = (x, y) -> { x * y }
-        print (f3(2, 3))
+        f3 = name -> { print("hi,", name) }
+        f3 "nakamuray" # => hi, nakamuray
 
-        f4 = i -> { i * 2 }
-        print (f4 10) # => 20
+        f4 = (x, y) -> { x * y }
+        print (f4(2, 3))
 
-        f5 = { _ * 2 }
-        print (f5 10) # => 20
+        f5 = x -> y -> { x * y }
+        print (f5 2 3)
 
-        f6 = 0 -> { "zero" } | n -> { n }
-        print (f6 0) # => zero
-        print (f6 100) # => 100
+        f6 = i -> { i * 2 }
+        print (f6 10) # => 20
+
+        f7 = { _ * 2 }
+        print (f7 10) # => 20
+
+        f8 = 0 -> { "zero" } | n -> { n }
+        print (f8 0) # => zero
+        print (f8 100) # => 100
     |]
     ret @?= [ [String "hi"]
+            , [String "hi"]
             , [String "hi,", String "nakamuray"]
+            , [Number (I 6)]
             , [Number (I 6)]
             , [Number (I 20)]
             , [Number (I 20)]
