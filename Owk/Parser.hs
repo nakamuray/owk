@@ -121,7 +121,7 @@ unit = symbol "(" >> symbol ")" >> return (Tuple [])
 
 -- [ pattern -> ] { expression [; expression ...] } [ | [pattern -> ] { expression ...]
 function :: Parser Expression
-function = Function <$> (function' `sepBy1` symbol "|")
+function = Function <$> ((try function' <|> function'') `sepBy1` symbol "|")
 
 function' :: Parser (Pattern, [Expression])
 function' = do
@@ -133,6 +133,14 @@ function' = do
 funcPattern :: Parser Pattern
 funcPattern = option (PVariable "_") (try pattern <* symbol "->")
     <?> "function parameters"
+
+function'' :: Parser (Pattern, [Expression])
+function'' = do
+    pat <- try pattern
+    symbol "->"
+    e <- expression
+    return $ (pat, [e])
+  <?> "function"
 
 define :: Parser Expression
 define = Define <$> pattern <* symbol "=" <*> expression

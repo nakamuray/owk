@@ -42,6 +42,9 @@ case_function_2 = parseOwk "<test>" "(x, y) -> { 1 }" @?= Right (Program [Functi
 case_function_3 = parseOwk "<test>" "0 -> { \"zero\" } | 1 -> { \"one\" } | n -> { n }"
                       @?= Right (Program [Function [(PNumber (I 0), [String "zero"]), (PNumber (I 1), [String "one"]), (PVariable "n", [Variable "n"])]])
 case_function_4 = parseOwk "<test>" "f x y" @?= Right (Program [FuncCall (FuncCall (Variable "f") (Variable "x")) (Variable "y")])
+case_function_5 = parseOwk "<test>" "_ -> 1" @?= Right (Program [Function [(PVariable "_", [Number (I 1)])]])
+case_function_6 = parseOwk "<test>" "x -> print x" @?= Right (Program [Function [(PVariable "x", [FuncCall (Variable "print") (Variable "x")])]])
+case_function_7 = parseOwk "<test>" "x -> y -> 1" @?= Right (Program [Function [(PVariable "x", [Function [(PVariable "y", [Number (I 1)])]])]])
 
 case_variable_0 = parseOwk "<test>" "x" @?= Right (Program [Variable "x"])
 

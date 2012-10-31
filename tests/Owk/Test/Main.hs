@@ -47,6 +47,13 @@ case_tail = do
         main = print
         |]
 
+case_curry = do
+    ret <- flip testOwkString [] $ [s|
+        f = x -> y -> print : x * y
+        f 2 3
+    |]
+    ret @?= [[Number (I 6)]]
+
 case_readme_string = do
     ret <- flip testOwkString [] [s|
         s = "hello, owk"
