@@ -41,6 +41,7 @@ case_function_1 = parseOwk "<test>" "{ 1; 2 }" @?= Right (Program [Function [(PV
 case_function_2 = parseOwk "<test>" "(x, y) -> { 1 }" @?= Right (Program [Function [(PTuple [PVariable "x", PVariable "y"], [Number (I 1)])]])
 case_function_3 = parseOwk "<test>" "0 -> { \"zero\" } | 1 -> { \"one\" } | n -> { n }"
                       @?= Right (Program [Function [(PNumber (I 0), [String "zero"]), (PNumber (I 1), [String "one"]), (PVariable "n", [Variable "n"])]])
+case_function_4 = parseOwk "<test>" "f x y" @?= Right (Program [FuncCall (FuncCall (Variable "f") (Variable "x")) (Variable "y")])
 
 case_variable_0 = parseOwk "<test>" "x" @?= Right (Program [Variable "x"])
 
@@ -71,3 +72,4 @@ case_newline_11 = parseOwk "<test>" "\"x\";\"y\";\"z\"" @=? parseOwk "<test>" "\
 
 case_newline_12 = parseOwk "<test>" "[\n  1,\n  2 , \n  3\n]" @?= Right (Program [List [Number (I 1), Number (I 2), Number (I 3)]])
 case_newline_13 = parseOwk "<test>" "{\n  k1 => 1,\n  k2 \n => \n 2 , \n  k3 => 3\n}" @?= Right (Program [Dict [("k1", Number (I 1)), ("k2", Number (I 2)), ("k3", Number (I 3))]])
+case_newline_14 = parseOwk "<test>" "f x\ny" @?= Right (Program [FuncCall (Variable "f") (Variable "x"), Variable "y"])

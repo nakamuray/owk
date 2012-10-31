@@ -105,15 +105,10 @@ reservedOp name =
     opLetter = oneOf "!%&*+-/:<=>?|~"
 
 term :: Parser Expression
-term = flip label "term" $ lexeme $ do
-    e <- term'
-    mparam <- optionMaybe (try $ lexeme term')
-    case mparam of
-        Nothing     -> return e
-        Just param  -> return $ FuncCall e param
+term = flip label "term" $ foldl1 FuncCall <$> many1 (try term')
 
 term' :: Parser Expression
-term' = flip label "expressions without function call" $ do
+term' = flip label "expressions without function call" $ lexeme $ do
     e <- tryAll [ parens expression, unit, function, define, variable, string_, number, tuple, list, dict ]
     sub <- option [] $ try subscripts
     whiteSpace
