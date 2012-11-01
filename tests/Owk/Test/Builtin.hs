@@ -9,11 +9,14 @@ import Data.Text ()
 import Test.Framework (testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 
+import qualified Data.HashMap.Strict as H
 import qualified Data.Vector as V
 
 import Owk.Builtin
+import Owk.Builtin.Expand
 import Owk.Type
 import Owk.Test.Util
+import qualified Owk.Namespace as Namespace
 
 tests = $(testGroupGenerator)
 
@@ -43,3 +46,20 @@ case_add_2 = testOwk_ $ do
 case_add_3 = testOwk_ $ do
     ret <- __add__ (List $ V.fromList $ map (Number . I) [1, 2, 3]) (List $ V.fromList $ map (Number . I) [4, 5, 6])
     liftIO $ ret @?= (List $ V.fromList $ map (Number . I) [1, 2, 3, 4, 5, 6])
+
+case_expand_1 = testOwk_ $ do
+    Namespace.define "x" (String "hello")
+    Namespace.define "y" (String "world")
+    ret <- expand (String "#{x} #{y}. \\#{x}")
+    liftIO $ ret @?= (String "hello world. #{x}")
+
+case_expand_2 = testOwk_ $ do
+    Namespace.define "o" (Dict $ H.fromList [("x", String "world")])
+    ret <- expand (String "hello #{o.x}")
+    liftIO $ ret @?= (String "hello world")
+
+case_expand_3 = testOwk_ $ do
+    Namespace.define "x" (Number (I 2))
+    Namespace.define "y" (Number (I 3))
+    ret <- expand (String "hello #{x * y}")
+    liftIO $ ret @?= (String "hello 6")

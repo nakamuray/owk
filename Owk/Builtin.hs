@@ -6,6 +6,7 @@ import Prelude hiding (print)
 import qualified Prelude
 
 import Control.Applicative ((<$>))
+import Control.Monad ((>=>))
 import Control.Monad.Error (catchError)
 import Data.Maybe (isJust)
 import Data.Monoid ((<>))
@@ -17,6 +18,7 @@ import qualified Data.Text as T
 import qualified Data.Vector as V
 import qualified Data.Vector.Algorithms.Intro as VI
 
+import Owk.Builtin.Expand (expand)
 import Owk.Interpreter
 import Owk.Module
 import Owk.Type
@@ -35,6 +37,8 @@ builtins =
     , ("ref", Function $ \obj -> Ref <$> ref obj)
 
     , ("sort", builtin1M sort)
+    , ("expand", builtin1M expand)
+    , ("printex", builtin1M printex)
 
       -- operators
     , ("__add__", numop (+))
@@ -90,6 +94,9 @@ sort (List v) = do
 sort d@(Dict _) = sort (list d)
 sort Undef = sort (list Undef)
 sort obj = exception $ String $ "sort: not a List: " <> showText obj
+
+printex :: Object -> Owk Object
+printex = expand >=> print
 
 
 -- operators

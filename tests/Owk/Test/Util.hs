@@ -7,6 +7,7 @@ import Language.Haskell.TH.Quote
 
 import qualified Data.Conduit.List as CL
 
+import Owk.Builtin (builtins)
 import Owk.Type as Type
 
 import qualified Owk.Namespace as Namespace
@@ -15,7 +16,7 @@ s = QuasiQuoter { quoteExp = stringE }
 
 
 testOwk owk = do
-    n <- Namespace.fromList []
+    n <- Namespace.fromList builtins
     CL.sourceNull $= runOwk owk n $$ CL.consume
 
 testOwk_ owk = testOwk owk >> return ()
