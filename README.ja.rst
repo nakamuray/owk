@@ -281,7 +281,7 @@ owk コマンドについて
 
 ::
 
-  $ seq 10 | owk 'print "init"; main = input -> { print "[", input.0, "]" }; end = { print "end" }'
+  $ seq 10 | owk 'print "init"; main = input -> { print("[", input.0, "]") }; end = { print "end" }'
   init
   [ 1 ]
   [ 2 ]
@@ -300,7 +300,7 @@ owk コマンドについて
 
 ::
 
-  $ seq 10 | owk -m 'print "[", $.0, "]"'
+  $ seq 10 | owk -m 'print("[", $.0, "]")'
   [ 1 ]
   [ 2 ]
   [ 3 ]
@@ -329,5 +329,5 @@ owk コマンドについて
 
 ::
 
-  $ owk -o json 'print { key => "value", key2 => 100 }; exit()'
+  $ owk -o json 'print { key => "value", key2 => 100 }'
   {"key2":100,"key":"value"}
