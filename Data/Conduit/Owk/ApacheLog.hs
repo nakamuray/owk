@@ -44,17 +44,18 @@ apacheLog = do
     char '\n'
 
     return $ Dict $ H.fromList
-        [ ("addr", b2s ip)
+        [ ("host", b2s ip)
         , ("identity", b2s' identity)
         , ("user", b2s' user)
-        , ("date", b2s date)
+        , ("time", b2s date)
+        , ("req", b2s req)
         , ("method", b2s method)
         , ("path", b2s path)
         , ("version", b2s version)
         , ("status", n status)
         , ("size", n' size)
         , ("referer", b2s' referer)
-        , ("user-agent", b2s' ua)
+        , ("ua", b2s' ua)
         ]
 
   where
