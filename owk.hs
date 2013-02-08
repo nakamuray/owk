@@ -66,7 +66,7 @@ usage = unlines
     , ""
     , "OPTIONS: -h        print this help"
     , "         -d        dump AST and exit"
-    , "         -m        explicit `main = $ -> { ... }` function definition"
+    , "         -m        implicit `main = $ -> { ... }` function definition"
     , "         -i TYPE   set input TYPE"
     , "         -o TYPE   set output TYPE"
     , "         -io TYPE  set both input/output"
