@@ -16,6 +16,7 @@ import Data.Conduit.Owk
 import Data.Conduit.Owk.Type
 import qualified Data.Conduit.Owk.ApacheLog as ApacheLog
 import qualified Data.Conduit.Owk.Line as Line
+import qualified Data.Conduit.Owk.LTSV as LTSV
 import qualified Data.Conduit.Owk.JSON as JSON
 import Owk.Parser
 
@@ -45,6 +46,7 @@ run (Config _ _ em fname script i o) = do
 inputs :: [(String, OwkInput)]
 inputs =
     [ ("line", Line.toObject)
+    , ("ltsv", LTSV.toObject)
     , ("json", JSON.toObject)
     , ("apachelog", ApacheLog.toObject)
     ]
@@ -52,6 +54,7 @@ inputs =
 outputs :: [(String, OwkOutput)]
 outputs =
     [ ("line", Line.fromObjects)
+    , ("ltsv", LTSV.fromObjects)
     , ("json", JSON.fromObjects)
     , ("jsonpp", JSON.fromObjectsPretty)
     ]
@@ -69,6 +72,7 @@ usage = unlines
     , "         -io TYPE  set both input/output"
     , ""
     , "TYPE: line (default)"
+    , "      ltsv"
     , "      json"
     , "      jsonpp (output only)"
     , "      apachelog (input only)"
