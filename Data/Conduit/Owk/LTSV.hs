@@ -32,7 +32,7 @@ fromObjects :: OwkOutput
 fromObjects = CL.map (T.concat . map fromObject) =$= CT.encode CT.utf8
 
 fromObject :: Object -> Text
-fromObject (Dict h) = (T.intercalate "\t" $ map (\(k, v) -> strip $ k <> ":" <> toText v) $ H.toList h) <> "\n"
+fromObject (Dict h) = (T.intercalate "\t" $ map (\(k, v) -> stripLabel k <> ":" <> stripValue (toText v)) $ H.toList h) <> "\n"
 fromObject o = error $ "not a dict: " ++ show o
 
 toText :: Object -> Text
@@ -40,8 +40,9 @@ toText (String t) = t
 toText obj = let String t = str obj in t
 
 -- XXX: is there any escaping rule for these chars?
-strip :: Text -> Text
-strip = T.filter (\c -> not $ c `elem` "\t\r\n")
+stripLabel, stripValue :: Text -> Text
+stripLabel = T.filter lbyte
+stripValue = T.filter fbyte
 
 --
 
