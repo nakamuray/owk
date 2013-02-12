@@ -11,12 +11,12 @@ if false: then {
 }
 
 
-case 0: \
-    0 -> { print "zero" } \
+case 0:
+    0 -> { print "zero" }
   | n -> { print n }
 
-case 10: \
-    0 -> { print "zero" } \
+case 10:
+    0 -> { print "zero" }
   | n -> { print n }
 
 

@@ -94,15 +94,21 @@ unary :: String -> T.Text -> Operator T.Text () Identity Expression
 unary  name fun       = Prefix (do{ reservedOp name; return $ \x -> FuncCall (Variable fun) x })
 
 binary :: String -> T.Text -> Assoc -> Operator T.Text () Identity Expression
-binary  name fun assoc = Infix (do{ reservedOp name; return $ \x y -> FuncCall (Variable fun) (Tuple [x, y]) }) assoc
+binary  name fun assoc = Infix (do{ reservedOp2 name; return $ \x y -> FuncCall (Variable fun) (Tuple [x, y]) }) assoc
 
 reservedOp :: String -> Parser ()
-reservedOp name =
-    lexeme $ try $ do
-        string name
-        notFollowedBy opLetter <?> ("end of " ++ show name)
+reservedOp name = try $ lexeme $ reservedOp' name
+
+reservedOp2 :: String -> Parser ()
+reservedOp2 name = try $ lexeme' $ reservedOp' name
+
+reservedOp' :: String -> Parser ()
+reservedOp' name = do
+    string name
+    notFollowedBy opLetter <?> ("end of " ++ show name)
   where
     opLetter = oneOf "!%&*+-/:<=>?|~"
+
 
 term :: Parser Expression
 term = flip label "term" $ foldl1 FuncCall <$> many1 (try term')
@@ -121,7 +127,11 @@ unit = symbol "(" >> symbol ")" >> return (Tuple [])
 
 -- [ pattern -> ] { expression [; expression ...] } [ | [pattern -> ] { expression ...]
 function :: Parser Expression
-function = Function <$> ((try function' <|> function'') `sepBy1` symbol "|")
+function = Function <$> ((try function' <|> function'') `sepBy1` funcSep)
+  where
+    funcSep = try $ do
+        whiteSpace'
+        lexeme' $ reservedOp' "|"
 
 function' :: Parser (Pattern, [Expression])
 function' = do
