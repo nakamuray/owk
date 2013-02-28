@@ -23,7 +23,7 @@ executable owk
                      , attoparsec
                      , attoparsec-conduit
                      , bytestring
-                     , conduit
+                     , conduit >= 1.0
                      , containers
                      , filepath
                      , mtl
