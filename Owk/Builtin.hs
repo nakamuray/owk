@@ -39,6 +39,8 @@ builtins =
     , ("sort", builtin1M sort)
     , ("expand", builtin1M expand)
     , ("printex", builtin1M printex)
+    , ("split", builtin2 split)
+    , ("length", builtin1M length_)
 
       -- operators
     , ("__add__", numop (+))
@@ -97,6 +99,20 @@ sort obj = exception $ String $ "sort: not a List: " <> showText obj
 
 printex :: Object -> Owk Object
 printex = expand >=> print
+
+-- TODO: split using regex
+split :: Object -> Object -> Object
+split sep s
+    | String sep' <- str sep
+    , String s' <- str s
+    = List $ V.fromList $ map String $ T.splitOn sep' s'
+split _ _ = error "should not be entered"
+
+length_ :: Object -> Owk Object
+length_ (String s) = return $ Number . I $ fromIntegral $ T.length s
+length_ (List v) = return $ Number . I $ fromIntegral $ V.length v
+length_ (Dict h) = return $ Number . I $ fromIntegral $ length $ H.toList h
+length_ obj = exception $ String $ showText obj <> " don't have length"
 
 
 -- operators

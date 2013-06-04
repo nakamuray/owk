@@ -63,3 +63,17 @@ case_expand_3 = testOwk_ $ do
     Namespace.define "y" (Number (I 3))
     ret <- expand (String "hello #{x * y}")
     liftIO $ ret @?= (String "hello 6")
+
+
+case_split_1 = split (String " ") (String "hello world") @=? List (V.fromList [String "hello", String "world"])
+case_split_2 = split (String "!") (String "hello world") @=? List (V.fromList [String "hello world"])
+
+case_length_1 = testOwk_ $ do
+    ret <- length_ (String "hello")
+    liftIO $ ret @=? Number (I 5)
+case_length_2 = testOwk_ $ do
+    ret <- length_ (List $ V.fromList [Undef, Undef, Undef])
+    liftIO $ ret @=? Number (I 3)
+case_length_3 = testOwk_ $ do
+    ret <- length_ (Dict $ H.fromList [("key", String "value"), ("number", Number (I 5))])
+    liftIO $ ret @=? Number (I 2)
