@@ -1,13 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Owk.Builtin.Expand ( expand ) where
 
-import Text.Parsec
-import Text.Parsec.Text
+import Text.Trifecta
 
-import Control.Applicative ((<$>), (<*), (*>))
+import Control.Applicative ((<$>), (<*), (*>), (<|>))
 import Control.Monad (foldM)
-import Data.Monoid ((<>))
-import Data.Text (Text, snoc)
+import Data.Monoid ((<>), mempty)
+import Data.Text (Text, unpack, snoc)
 
 import Owk.AST (Expression)
 import Owk.Interpreter (expr)
@@ -20,8 +19,8 @@ import Owk.Util
 expand :: Object -> Owk Object
 expand (String f) =
     case expandPrep f of
-        Left e   -> exception $ String $ showText e
-        Right es -> String <$> foldM go "" es
+        Failure e  -> exception $ String $ showText e
+        Success es -> String <$> foldM go "" es
   where
     go buf (Right c) = return $ buf `snoc` c
     go buf (Left e)  = (buf <>) <$> str'' <$> expr e
@@ -31,8 +30,8 @@ expand (String f) =
 
 expand obj = exception $ String $ "expand: not a String: " <> showText obj
 
-expandPrep :: Text -> Either ParseError [Either Expression Char]
-expandPrep = parse p_expand ""
+expandPrep :: Text -> Result [Either Expression Char]
+expandPrep = parseString p_expand mempty . unpack
 
 p_expand :: Parser [Either Expression Char]
 p_expand = many $ try (Right <$> p_escaped) <|> try (Left <$> p_expression) <|> (Right <$> anyChar)

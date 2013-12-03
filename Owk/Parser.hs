@@ -1,32 +1,35 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Owk.Parser where
 
-import Control.Applicative hiding ((<|>), many)
-import Control.Monad.Identity (Identity)
+import Control.Applicative hiding (many)
 import Data.Attoparsec.Number (Number(..))
 import Data.Char (isHexDigit)
 import Numeric (readHex)
-import Text.Parsec as Parsec
-import Text.Parsec.Expr
-import Text.Parsec.Text
+import Text.Parser.Expression
+import Text.Trifecta hiding (symbol, whiteSpace, parens, braces, comma, brackets)
+import Text.Trifecta.Delta (Delta(Directed))
 
 import Data.Word (Word8)
 
 import qualified Data.Text as T
-import qualified Data.Text.IO as TI
+import qualified Data.ByteString.UTF8 as BU
 
 import Owk.AST
 
+type SourceName = String
+
 parseOwk :: SourceName -> T.Text -> Either String Program
 parseOwk n t =
-    case parse program n t of
-        Left e  -> Left $ show e
-        Right p -> Right p
+    case parseString program (Directed (BU.fromString n) 0 0 0 0) $ T.unpack t of
+        Failure e  -> Left $ show e
+        Success p -> Right p
 
 parseOwkFile :: FilePath -> IO (Either String Program)
 parseOwkFile fp = do
-    s <- TI.readFile fp
-    return $ parseOwk fp s
+    r <- parseFromFileEx program fp
+    case r of
+        Failure e  -> return $ Left $ show e
+        Success p -> return $ Right p
 
 program :: Parser Program
 program = Program <$> block <* eof
@@ -77,7 +80,7 @@ blankLines = do
     return ()
 
 
-table :: OperatorTable T.Text () Identity Expression
+table :: OperatorTable Parser Expression
 table = [ [unary "-" "__neg__", unary "+" "__num__"]
         , [binary "*" "__mul__" AssocLeft, binary "/" "__div__" AssocLeft, binary "%" "__mod__" AssocLeft]
         , [binary "+" "__add__" AssocLeft, binary "-" "__sub__" AssocLeft]
@@ -90,10 +93,10 @@ table = [ [unary "-" "__neg__", unary "+" "__num__"]
         , [binary ":=" "__wref__" AssocNone]
         ]
 
-unary :: String -> T.Text -> Operator T.Text () Identity Expression
+unary :: String -> T.Text -> Operator Parser Expression
 unary  name fun       = Prefix (do{ reservedOp name; return $ \x -> FuncCall (Variable fun) x })
 
-binary :: String -> T.Text -> Assoc -> Operator T.Text () Identity Expression
+binary :: String -> T.Text -> Assoc -> Operator Parser Expression
 binary  name fun assoc = Infix (do{ reservedOp2 name; return $ \x y -> FuncCall (Variable fun) (Tuple [x, y]) }) assoc
 
 reservedOp :: String -> Parser ()
@@ -111,16 +114,18 @@ reservedOp' name = do
 
 
 term :: Parser Expression
-term = flip label "term" $ foldl1 FuncCall <$> many1 (try term')
+term = foldl1 FuncCall <$> many1 (try term')
+     <?> "term"
 
 term' :: Parser Expression
-term' = flip label "expressions without function call" $ lexeme $ do
+term' = lexeme $ do
     e <- tryAll [ parens expression, unit, function, define, variable, string_, number, tuple, list, dict ]
     sub <- option [] $ try subscripts
     whiteSpace
     case sub of
         [] -> return e
         sub' -> return $ FuncCall (Variable "__get__") $ List $ e : (map String sub')
+  <?> "expressions without function call"
 
 unit :: Parser Expression
 unit = symbol "(" >> symbol ")" >> return (Tuple [])
@@ -173,7 +178,7 @@ number = Number <$> number'
 number' :: Parser Number
 number' = do
     d <- many1 digit
-    mdot <- optionMaybe $ char '.'
+    mdot <- optional $ char '.'
     case mdot of
         Just _ -> do
             n <- many1 digit
@@ -188,13 +193,15 @@ list :: Parser Expression
 list = List <$> brackets (makeListParser expression)
 
 makeListParser :: Parser a -> Parser [a]
-makeListParser p = flip label "list" $ (whiteSpace' *> lexeme' p `sepEndBy` lexeme' comma)
+makeListParser p = (whiteSpace' *> lexeme' p `sepEndBy` lexeme' comma)
+    <?> "list"
 
 dict :: Parser Expression
 dict = Dict <$> makeDictParser expression
 
 makeDictParser :: Parser a -> Parser [(T.Text, a)]
-makeDictParser p = flip label "dict" $ (braces $ whiteSpace' *> kv `sepEndBy` lexeme' comma)
+makeDictParser p = (braces $ whiteSpace' *> kv `sepEndBy` lexeme' comma)
+    <?> "dict"
   where
     kv = do
         whiteSpace'
@@ -274,3 +281,9 @@ p_string          = between (char '"') (char '"') (many p_char)
                         | otherwise         = empty
                   where code      = fst $ head $ readHex x
                         max_char  = fromEnum (maxBound :: Char)
+
+many1 :: Parser a -> Parser [a]
+many1 p = do
+    r <- p
+    rs <- many p
+    return $ r : rs

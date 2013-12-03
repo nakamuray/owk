@@ -28,12 +28,14 @@ executable owk
                      , filepath
                      , mtl
                      , old-locale
-                     , parsec
+                     , parsers
                      , pretty-show
                      , stm
                      , text
                      , text-icu
                      , time
+                     , trifecta >= 1.0
+                     , utf8-string
                      , unordered-containers
                      , vector
                      , vector-algorithms
@@ -56,12 +58,14 @@ test-suite test-owk
                      , filepath
                      , mtl
                      , old-locale
-                     , parsec
+                     , parsers
                      , pretty-show
                      , stm
                      , text
                      , text-icu
                      , time
+                     , trifecta >= 1.0
+                     , utf8-string
                      , unordered-containers
                      , vector
                      , vector-algorithms
