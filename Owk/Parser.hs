@@ -67,7 +67,7 @@ whiteSpace = skipMany (simpleSpaces <|> newlineFollowingBackspace <|> oneLineCom
     simpleSpaces = oneOf " \t\r" >> return ()
     newlineFollowingBackspace = string "\\\n" >> return ()
     oneLineComment = do
-        try (string "#")
+        char '#'
         skipMany (satisfy (/= '\n'))
         return ()
 
@@ -94,10 +94,10 @@ table = [ [unary "-" "__neg__", unary "+" "__num__"]
         ]
 
 unary :: String -> T.Text -> Operator Parser Expression
-unary  name fun       = Prefix (do{ reservedOp name; return $ \x -> FuncCall (Variable fun) x })
+unary  name fun       = Prefix (do{ reservedOp name; return $ \x -> FuncCall (Variable fun) x } <?> "operator")
 
 binary :: String -> T.Text -> Assoc -> Operator Parser Expression
-binary  name fun assoc = Infix (do{ reservedOp2 name; return $ \x y -> FuncCall (Variable fun) (Tuple [x, y]) }) assoc
+binary  name fun assoc = Infix (do{ reservedOp2 name; return $ \x y -> FuncCall (Variable fun) (Tuple [x, y]) } <?> "binary operator") assoc
 
 reservedOp :: String -> Parser ()
 reservedOp name = try $ lexeme $ reservedOp' name
@@ -114,21 +114,29 @@ reservedOp' name = do
 
 
 term :: Parser Expression
-term = foldl1 FuncCall <$> many1 (try term')
-     <?> "term"
+term = foldl1 FuncCall <$> many1 term'
+     <?> "expression"
 
 term' :: Parser Expression
 term' = lexeme $ do
-    e <- tryAll [ parens expression, unit, function, define, variable, string_, number, tuple, list, dict ]
-    sub <- option [] $ try subscripts
+    e <- try function <|> try define <|> parensesEnclosed <|> list <|> dict <|> variable <|> string_ <|> number
+    sub <- option [] subscripts
     whiteSpace
     case sub of
         [] -> return e
         sub' -> return $ FuncCall (Variable "__get__") $ List $ e : (map String sub')
-  <?> "expressions without function call"
+  <?> "expression"
 
-unit :: Parser Expression
-unit = symbol "(" >> symbol ")" >> return (Tuple [])
+parensesEnclosed :: Parser Expression
+parensesEnclosed = do
+    t <- parens tupleBody
+    case t of
+        -- single is just a value
+        Tuple [o] -> return o
+        _         -> return t
+
+tupleBody :: Parser Expression
+tupleBody = Tuple <$> makeListParser expression
 
 -- [ pattern -> ] { expression [; expression ...] } [ | [pattern -> ] { expression ...]
 function :: Parser Expression
@@ -200,7 +208,7 @@ dict :: Parser Expression
 dict = Dict <$> makeDictParser expression
 
 makeDictParser :: Parser a -> Parser [(T.Text, a)]
-makeDictParser p = (braces $ whiteSpace' *> kv `sepEndBy` lexeme' comma)
+makeDictParser p = (braces $ kv `sepEndBy` lexeme' comma)
     <?> "dict"
   where
     kv = do
@@ -226,7 +234,12 @@ pNumber :: Parser Pattern
 pNumber = PNumber <$> number'
 
 pTuple :: Parser Pattern
-pTuple = PTuple <$> parens (makeListParser pattern)
+pTuple = do
+    t <- parens (makeListParser pattern)
+    case t of
+        -- single is just a value
+        [o] -> return o
+        _   -> return (PTuple t)
 
 pList :: Parser Pattern
 pList = PList <$> brackets (makeListParser pattern)
