@@ -225,11 +225,8 @@ while cond = return . Function $ \block -> go block Undef
           else return ret
 
 print :: Function
-print (Tuple os) = do
-    lift $ yield os
-    return $ Bool True
 print o = do
-    lift $ yield [o]
+    lift $ yield o
     return $ Bool True
 
 getobj :: Function

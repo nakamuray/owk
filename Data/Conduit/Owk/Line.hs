@@ -6,6 +6,8 @@ module Data.Conduit.Owk.Line
 
 import Data.Conduit
 
+import Data.Monoid ((<>))
+
 import qualified Data.Conduit.List as CL
 import qualified Data.Conduit.Text as CT
 import qualified Data.Text as T
@@ -22,7 +24,11 @@ toObject = CT.decode CT.utf8 =$= CT.lines =$= CL.map (\line -> Dict
                                                      $ String line : map String (T.words line))
 
 fromObjects :: OwkOutput
-fromObjects = CL.map (\objs -> T.intercalate " " $ map toText objs ++ ["\n"]) =$= CT.encode CT.utf8
+fromObjects = CL.map fromObject =$= CT.encode CT.utf8
+
+fromObject :: Object -> T.Text
+fromObject (Tuple os) = T.intercalate " " $ map toText os ++ ["\n"]
+fromObject o          = toText o <> "\n"
 
 toText :: Object -> T.Text
 toText (String t) = t

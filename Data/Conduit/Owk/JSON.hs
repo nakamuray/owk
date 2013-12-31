@@ -41,7 +41,10 @@ fromObjectsPretty :: OwkOutput
 fromObjectsPretty = fromObjects' encodePretty
 
 fromObjects' :: (O.Object -> BL.ByteString) -> OwkOutput
-fromObjects' encoder = CL.map (flip B.append "\n" . B.concat . BL.toChunks . BL.intercalate " " . map encoder)
+fromObjects' encoder = CL.map $ \obj ->
+    flip B.append "\n" $ case obj of
+        Tuple os -> B.concat $ BL.toChunks $ BL.intercalate " " $ map encoder os
+        o        -> BL.toStrict $ encoder o
 
 instance FromJSON O.Object where
     -- XXX: 何かきれいに書ける方法がありそうな気がしている

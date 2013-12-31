@@ -68,7 +68,7 @@ instance MonadTrans OwkT where
     lift m = OwkT (lift $ lift m)
 
 type Owk a = OwkT OwkPipe a
-type OwkPipe = ConduitM Object [Object] IO
+type OwkPipe = ConduitM Object Object IO
 
 data ControlFlow = Return Object | Exit Int | Exception Object | Next
     deriving Show
@@ -232,7 +232,7 @@ instance Ord Object where
     Undef `compare` Number _ = LT
     Undef `compare` Bool _ = LT
 
-runOwk :: Owk a -> Namespace -> Conduit Object IO [Object]
+runOwk :: Owk a -> Namespace -> Conduit Object IO Object
 runOwk o n = runOwk' o n >> return ()
 
 runOwk' :: Owk a -> Namespace -> OwkPipe a

@@ -25,7 +25,7 @@ tests = $(testGroupGenerator)
 
 case_sum = do
     ret <- testOwkStringMap script_sum $ map (Number . I ) [1..10]
-    ret @?= [[Number (I 55)]]
+    ret @?= [Number (I 55)]
   where
     script_sum = [s|
         sum = ref 0
@@ -39,7 +39,7 @@ case_sum = do
 
 case_tail = do
     ret <- testOwkStringMap script_tail $ map (Number . I ) [1..10]
-    ret @?= map ((:[]) . Number . I) [2..10]
+    ret @?= map (Number . I) [2..10]
   where
     script_tail = [s|
         # read and ignore first object
@@ -52,14 +52,14 @@ case_curry = do
         f = x -> y -> print : x * y
         f 2 3
     |]
-    ret @?= [[Number (I 6)]]
+    ret @?= [Number (I 6)]
 
 case_readme_string = do
     ret <- flip testOwkString [] [s|
         s = "hello, owk"
         print "\u3042"
     |]
-    ret @?= [[String "あ"]]
+    ret @?= [String "あ"]
 
 case_readme_number = do
     ret <- flip testOwkString [] [s|
@@ -67,7 +67,7 @@ case_readme_number = do
         j = 10.1
         print (i * j)
     |]
-    ret @?= [[Number (D 20.2)]]
+    ret @?= [Number (D 20.2)]
 
 case_readme_bool = do
     ret <- flip testOwkString [] [s|
@@ -75,7 +75,7 @@ case_readme_bool = do
         f = false
         print(t, f)
     |]
-    ret @?= [[Bool True, Bool False]]
+    ret @?= [Tuple [Bool True, Bool False]]
 
 case_readme_dict = do
     ret <- flip testOwkString [] [s|
@@ -86,7 +86,7 @@ case_readme_dict = do
         d3 = d2 ["key4", "egg"]
         print(d2.key2, d3.key4)
     |]
-    ret @?= [[String "value"], [String "value"], [Number (I 200), String "egg"]]
+    ret @?= [String "value", String "value", Tuple [Number (I 200), String "egg"]]
 
 case_readme_list = do
     ret <- flip testOwkString [] [s|
@@ -95,14 +95,14 @@ case_readme_list = do
         L2 = L[1, 2]
         print L2 # => [2, 3]
     |]
-    ret @?= [[Number (I 1)], [List (V.fromList [Number (I 2), Number (I 3)])]]
+    ret @?= [Number (I 1), List (V.fromList [Number (I 2), Number (I 3)])]
 
 case_readme_tuple = do
     ret <- flip testOwkString [] [s|
         t = (1, 2)
         print (t, undef)
     |]
-    ret @?= [[Tuple [Number (I 1), Number (I 2)], Undef]]
+    ret @?= [Tuple [Tuple [Number (I 1), Number (I 2)], Undef]]
 
 case_readme_function = do
     ret <- flip testOwkString [] [s|
@@ -131,15 +131,15 @@ case_readme_function = do
         print (f8 0) # => zero
         print (f8 100) # => 100
     |]
-    ret @?= [ [String "hi"]
-            , [String "hi"]
-            , [String "hi,", String "nakamuray"]
-            , [Number (I 6)]
-            , [Number (I 6)]
-            , [Number (I 20)]
-            , [Number (I 20)]
-            , [String "zero"]
-            , [Number (I 100)]
+    ret @?= [ String "hi"
+            , String "hi"
+            , Tuple [String "hi,", String "nakamuray"]
+            , Number (I 6)
+            , Number (I 6)
+            , Number (I 20)
+            , Number (I 20)
+            , String "zero"
+            , Number (I 100)
             ]
 
 case_readme_ref = do
@@ -149,7 +149,7 @@ case_readme_ref = do
         r := 1
         print (r ()) # => 1
     |]
-    ret @?= [[Number (I 0)], [Number (I 1)]]
+    ret @?= [Number (I 0), Number (I 1)]
 
 case_readme_pattern = do
     ret <- flip testOwkString [] [s|
@@ -171,11 +171,11 @@ case_readme_pattern = do
         print (func 1) # => 1
         print (func 2) # =>
     |]
-    ret @?= [ [Number (I 1), Number (I 2), Number (I 3), Number (I 4), Number (I 5), Tuple [String "6", Number (I 7)], Number (I 8), Number (I 9)]
-            , [Number (I 10), Number (I 11)]
-            , [Number (I 12), Undef]
-            , [Number (I 1)]
-            , [Undef]
+    ret @?= [ Tuple [Number (I 1), Number (I 2), Number (I 3), Number (I 4), Number (I 5), Tuple [String "6", Number (I 7)], Number (I 8), Number (I 9)]
+            , Tuple [Number (I 10), Number (I 11)]
+            , Tuple [Number (I 12), Undef]
+            , Number (I 1)
+            , Undef
             ]
 
 case_readme_operator_app = do
@@ -183,18 +183,18 @@ case_readme_operator_app = do
         print : 1 + 1 # => 2
         print (1 + 1) # => 2
     |]
-    ret @?= [[Number (I 2)], [Number (I 2)]]
+    ret @?= [Number (I 2), Number (I 2)]
 
 case_readme_operator_if = do
     ret <- flip testOwkString [] [s|
         true ? { print "hi" } # => hi
         false ? { print "hi?" }
     |]
-    ret @?= [[String "hi"]]
+    ret @?= [String "hi"]
 
 
-testOwkString :: T.Text -> [Object] -> IO [[Object]]
+testOwkString :: T.Text -> [Object] -> IO [Object]
 testOwkString script inputs = CL.sourceList inputs $= owkString script $$ CL.consume
 
-testOwkStringMap :: T.Text -> [Object] -> IO [[Object]]
+testOwkStringMap :: T.Text -> [Object] -> IO [Object]
 testOwkStringMap script inputs = CL.sourceList inputs $= owkStringMap script $$ CL.consume

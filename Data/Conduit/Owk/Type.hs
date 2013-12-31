@@ -8,4 +8,4 @@ import Data.ByteString.Char8 as B
 import Owk.Type
 
 type OwkInput = Conduit B.ByteString IO Object
-type OwkOutput = Conduit [Object] IO B.ByteString
+type OwkOutput = Conduit Object IO B.ByteString

@@ -29,9 +29,10 @@ toObject :: OwkInput
 toObject = CA.conduitParser ltsv =$= awaitForever (yield . snd)
 
 fromObjects :: OwkOutput
-fromObjects = CL.map (T.concat . map fromObject) =$= CT.encode CT.utf8
+fromObjects = CL.map fromObject =$= CT.encode CT.utf8
 
 fromObject :: Object -> Text
+fromObject (Tuple os) = T.concat $ map fromObject os
 fromObject (Dict h) = (T.intercalate "\t" $ map (\(k, v) -> stripLabel k <> ":" <> stripValue (toText v)) $ H.toList h) <> "\n"
 fromObject o = error $ "not a dict: " ++ show o
 

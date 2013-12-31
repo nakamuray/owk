@@ -29,23 +29,23 @@ import Owk.Type
 import qualified Owk.Namespace as Namespace
 
 
-owkString :: Text -> Conduit Object IO [Object]
+owkString :: Text -> Conduit Object IO Object
 owkString script = owk "<string>" script
 
-owkStringMap :: Text -> Conduit Object IO [Object]
+owkStringMap :: Text -> Conduit Object IO Object
 owkStringMap script = owkMap "<string>" script
 
-owkFile :: FilePath -> Conduit Object IO [Object]
+owkFile :: FilePath -> Conduit Object IO Object
 owkFile fname = do
     script <- liftIO $ TI.readFile fname
     owk fname script
 
-owkFileMap :: FilePath -> Conduit Object IO [Object]
+owkFileMap :: FilePath -> Conduit Object IO Object
 owkFileMap fname = do
     script <- liftIO $ TI.readFile fname
     owkMap fname script
 
-owk :: String -> Text -> Conduit Object IO [Object]
+owk :: String -> Text -> Conduit Object IO Object
 owk fname script =
     case parseOwk fname script of
         -- TODO: don't use error, use conduit's error system
@@ -54,7 +54,7 @@ owk fname script =
             n <- liftIO $ Namespace.fromList globalNamespace
             runOwk (importProgram fname prog `catchError` catchExit) n
 
-owkMap :: String -> Text -> Conduit Object IO [Object]
+owkMap :: String -> Text -> Conduit Object IO Object
 owkMap fname script =
     case parseOwk fname script of
         -- TODO: don't use error, use conduit's error system
