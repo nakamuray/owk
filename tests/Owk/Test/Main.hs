@@ -24,21 +24,21 @@ tests = $(testGroupGenerator)
 
 
 case_sum = do
-    ret <- testOwkString script_sum $ map (Number . I ) [1..10]
+    ret <- testOwkStringMap script_sum $ map (Number . I ) [1..10]
     ret @?= [[Number (I 55)]]
   where
     script_sum = [s|
         sum = ref 0
-        main = {
-          sum := sum () + _
-        }
         end = {
           print : sum ()
+        }
+        {
+          sum := sum () + _
         }
         |]
 
 case_tail = do
-    ret <- testOwkString script_tail $ map (Number . I ) [1..10]
+    ret <- testOwkStringMap script_tail $ map (Number . I ) [1..10]
     ret @?= map ((:[]) . Number . I) [2..10]
   where
     script_tail = [s|
@@ -195,3 +195,6 @@ case_readme_operator_if = do
 
 testOwkString :: T.Text -> [Object] -> IO [[Object]]
 testOwkString script inputs = CL.sourceList inputs $= owkString script $$ CL.consume
+
+testOwkStringMap :: T.Text -> [Object] -> IO [[Object]]
+testOwkStringMap script inputs = CL.sourceList inputs $= owkStringMap script $$ CL.consume

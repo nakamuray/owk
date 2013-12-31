@@ -32,14 +32,15 @@ main = do
         _ -> run config
 
 run :: Config -> IO ()
-run (Config _ _ em fname script i o) = do
+run (Config _ _ mode fname script i o) = do
     script' <- script
     hSetBuffering stdout LineBuffering
     let source = CB.sourceHandle stdin $= i
         sink = o =$ CB.sinkHandle stdout
 
-        owk' = if em then owkMain fname script'
-                     else owk fname script'
+        owk' = case mode of
+            Map    -> owkMap fname script'
+            Eval   -> owk fname script'
     source $= owk' $$ sink
 
 
@@ -62,11 +63,12 @@ outputs =
 usage :: String
 usage = unlines
     [ "usage: owk [OPTIONS] <owk script>"
-    , "   or: owk [OPTIONS] [-f <script name>]"
+    , "   or: owk [OPTIONS] [-f <script file>]"
     , ""
     , "OPTIONS: -h        print this help"
     , "         -d        dump AST and exit"
-    , "         -m        implicit `main = $ -> { ... }` function definition"
+    , "         -e        eval mode"
+    , "         -m        map mode (default)"
     , "         -i TYPE   set input TYPE"
     , "         -o TYPE   set output TYPE"
     , "         -io TYPE  set both input/output"
@@ -81,10 +83,12 @@ usage = unlines
 pprint :: Show a => a -> IO ()
 pprint = putStrLn . ppShow
 
+data Mode = Eval | Map
+
 data Config = Config
   { showHelp :: Bool
   , dumpAST :: Bool
-  , explicitMain :: Bool
+  , mode :: Mode
   , fileName :: FilePath
   , owkScript :: IO T.Text
   , owkInput :: OwkInput
@@ -92,7 +96,7 @@ data Config = Config
   }
 
 defaultConfig :: Config
-defaultConfig = Config False False False "<stdin>" TI.getContents Line.toObject Line.fromObjects
+defaultConfig = Config False False Map "<stdin>" TI.getContents Line.toObject Line.fromObjects
 
 parseArgs :: [String] -> Config
 parseArgs args = parseArgs' defaultConfig args
@@ -101,7 +105,8 @@ parseArgs' :: Config -> [String] -> Config
 parseArgs' config [] = config
 parseArgs' config ("-h":args) = parseArgs' config { showHelp = True } args
 parseArgs' config ("-d":args) = parseArgs' config { dumpAST = True } args
-parseArgs' config ("-m":args) = parseArgs' config { explicitMain = True } args
+parseArgs' config ("-e":args) = parseArgs' config { mode = Eval } args
+parseArgs' config ("-m":args) = parseArgs' config { mode = Map } args
 parseArgs' config ("-f":fname:args) = parseArgs' config { fileName = fname, owkScript = TI.readFile fname } args
 parseArgs' config ("-i":pname:args) =
     case lookup pname inputs of

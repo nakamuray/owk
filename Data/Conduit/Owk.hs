@@ -1,20 +1,22 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Data.Conduit.Owk
   ( owkString
-  , owkStringMain
+  , owkStringMap
   , owkFile
-  , owkFileMain
+  , owkFileMap
   , owk
-  , owkMain
+  , owkMap
   ) where
 
 import Data.Conduit
 
 import Control.Monad.Error (catchError)
+import Control.Monad.Reader (asks, local)
 import Data.Text (Text)
 import System.Exit (ExitCode(..), exitSuccess, exitWith)
 
 import qualified Data.HashMap.Strict as H
+import qualified Data.Text as T
 import qualified Data.Text.IO as TI
 
 import qualified Owk.AST as AST
@@ -30,50 +32,48 @@ import qualified Owk.Namespace as Namespace
 owkString :: Text -> Conduit Object IO [Object]
 owkString script = owk "<string>" script
 
-owkStringMain :: Text -> Conduit Object IO [Object]
-owkStringMain script = owkMain "<string>" script
+owkStringMap :: Text -> Conduit Object IO [Object]
+owkStringMap script = owkMap "<string>" script
 
 owkFile :: FilePath -> Conduit Object IO [Object]
 owkFile fname = do
     script <- liftIO $ TI.readFile fname
     owk fname script
 
-owkFileMain :: FilePath -> Conduit Object IO [Object]
-owkFileMain fname = do
+owkFileMap :: FilePath -> Conduit Object IO [Object]
+owkFileMap fname = do
     script <- liftIO $ TI.readFile fname
-    owkMain fname script
+    owkMap fname script
 
 owk :: String -> Text -> Conduit Object IO [Object]
 owk fname script =
     case parseOwk fname script of
         -- TODO: don't use error, use conduit's error system
         Left e     -> error e
-        Right prog -> conduitOwkProgram fname prog
+        Right prog -> do
+            n <- liftIO $ Namespace.fromList globalNamespace
+            runOwk (importProgram fname prog `catchError` catchExit) n
 
-owkMain :: String -> Text -> Conduit Object IO [Object]
-owkMain fname script =
+owkMap :: String -> Text -> Conduit Object IO [Object]
+owkMap fname script =
     case parseOwk fname script of
         -- TODO: don't use error, use conduit's error system
         Left e     -> error e
-        Right prog ->
-            let prog' = AST.Program [AST.Define (AST.PVariable "main") $ AST.Function [(AST.PVariable "$", unProg prog)]]
-            in conduitOwkProgram fname prog'
-  where
-    unProg (AST.Program es) = es
-
-conduitOwkProgram :: FilePath -> AST.Program -> Conduit Object IO [Object]
-conduitOwkProgram fname prog = do
-    n <- liftIO $ Namespace.fromList globalNamespace
-    -- run script and get script's namespace,
-    Dict h <- runOwk' (importProgram fname prog `catchError` catchExit) n
-    -- search `main` function
-    case H.lookup "main" h of
-        Nothing   -> return ()
-        Just main -> do
+        Right prog -> do
+            n <- liftIO $ Namespace.fromList globalNamespace
+            -- run script and get last expression as a main function
+            (main, s) <- flip runOwk' n $ do
+                g <- asks Namespace.extractGlobal
+                s <- liftIO $ Namespace.create g
+                main <- local (const s) $ do
+                    Namespace.define "__file__" $ String (T.pack fname)
+                    interpret prog `catchError` catchExit
+                return (main, s)
             -- and then, run `main`
             awaitForever $ \obj -> do
                 runOwk (funcCall main obj `catchError` ignoreNext `catchError` catchExit >> return ()) n
                 return ()
+            h <- liftIO $ Namespace.toHash (Namespace.currentNamepace s)
             case H.lookup "end" h of
                 Just end -> do
                     runOwk (funcCall end unit `catchError` ignoreNext `catchError` catchExit >> return ()) n
@@ -83,10 +83,10 @@ conduitOwkProgram fname prog = do
     ignoreNext Next = return Undef
     ignoreNext e    = throwError e
 
-    -- TODO: don't exit inside conduit
-    catchExit (Exit 0) = liftIO exitSuccess
-    catchExit (Exit c) = liftIO $ exitWith $ ExitFailure c
-    catchExit e        = throwError e
+-- TODO: don't exit inside conduit
+catchExit (Exit 0) = liftIO exitSuccess
+catchExit (Exit c) = liftIO $ exitWith $ ExitFailure c
+catchExit e        = throwError e
 
 -- TODO: load haskell modules at runtime
 globalNamespace :: [(Text, Object)]
