@@ -48,7 +48,7 @@ builtins =
     , ("__num__", builtin1 num)
     , ("__neg__", builtin1M __neg__)
     , ("__sub__", numop (flip subtract))
-    , ("__mod__", numop (undefined))
+    , ("__mod__", numop __mod__)
     , ("__gt__", cmpop (>))
     , ("__lt__", cmpop (<))
     , ("__ge__", cmpop (>=))
@@ -131,6 +131,11 @@ __app__ obj arg = funcCall obj arg
 __neg__ :: Object -> Owk Object
 __neg__ (Number n) = return $ Number $ -n
 __neg__ obj = exception $ String $ "not a number: " <> showText obj
+
+__mod__ :: Number -> Number -> Number
+__mod__ (I x) (I y) = I $ x `mod` y
+__mod__ (D x) y = __mod__ (I $ floor x) y
+__mod__ x (D y) = __mod__ x (I $ floor y)
 
 __not__ :: Object -> Object
 __not__ obj =
