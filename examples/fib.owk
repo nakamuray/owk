@@ -2,8 +2,8 @@ fib = 0 -> { 0 }
     | 1 -> { 1 }
     | n -> { fib (n-1) + fib (n-2) }
 
-print : fib 0;
-print : fib 1;
-print : fib 2;
-print : fib 10;
-print : fib 20;
+put : fib 0
+put : fib 1
+put : fib 2
+put : fib 10
+put : fib 20

@@ -1,4 +1,5 @@
 # seq 10 | owk -f sum.owk
+# FIXME:
 result = ref 0;
 
 main = {
@@ -6,5 +7,5 @@ main = {
 };
 
 end = {
-  print : result ();
+  put : result ();
 };

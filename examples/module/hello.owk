@@ -1,1 +1,1 @@
-hello = { print "hello world" }
+hello = { put "hello world" }

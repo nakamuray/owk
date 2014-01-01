@@ -1,6 +1,7 @@
 # owk -i json -o json -f me.owk < timeline.json
+# FIXME:
 main = obj -> {
   obj.user.screen_name == "me" ? {
-    print obj;
+    put obj;
   };
 };
