@@ -21,7 +21,10 @@ toObject :: OwkInput
 toObject = CT.decode CT.utf8 =$= CT.lines =$= CL.map (\line -> Dict
                                                      $ H.fromList
                                                      $ zip (map showText [0 :: Int ..])
-                                                     $ String line : map String (T.words line))
+                                                     $ String line : map numberOrString (T.words line))
+
+numberOrString :: T.Text -> Object
+numberOrString t = maybe (String t) Number $ parseNumber t
 
 fromObjects :: OwkOutput
 fromObjects = CL.map fromObject =$= CT.encode CT.utf8

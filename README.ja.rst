@@ -9,7 +9,7 @@ awk 的に使えることを目指して作られている DSL/interpreter で�
 
   $ owk 'put "hello world"'
   hello world
-  $ seq 5 | owk '{ put : num _.1 * 2 }'
+  $ seq 5 | owk '{ put : _.1 * 2 }'
   2
   4
   6
@@ -322,19 +322,28 @@ owk コマンドについて
 
 ::
 
-  $ seq 10 | owk -r 'acc -> i -> { acc + num i.0 + 1 }' 0
+  $ seq 10 | owk -r 'acc -> i -> { acc + i.1 }' 0
   55
-  $ seq 10 | owk -r 'acc -> i -> { acc + num i.0 + 1 }'
+  $ seq 10 | owk -r 'acc -> i -> { acc + i.1 }'
   55
 
 また、複数の owk script を渡すことで、それぞれを連結して実行することができます。
 
 ::
 
-  $ seq 10 | owk '{ put : num _.0 }' '{ put : _ * 2 }' -r 'acc -> i -> acc + i'
-  110
+  $ seq 10 | owk '{ put : _.1 + 1 }' '{ put : _ * 2 }' -r 'acc -> i -> acc + i'
+  130
 
 入力をどのようにパースするかは ``-i`` オプションで指定できます。
+デフォルトでは行ごとにスペースで分割し、数値もしくは文字列として、
+数値をキーにした辞書に格納され、渡ります。
+
+::
+
+  $ echo '1 2 three' | owk '{ put _ }'
+  {0 => "1 2 three", 1 => 1, 2 => 2, 3 => "three"}
+
+例えば ``-i json`` と指定することで、 JSON としてパースするようになります。
 
 ::
 
