@@ -7,9 +7,9 @@ awk 的に使えることを目指して作られている DSL/interpreter で�
 
 ::
 
-  $ owk 'print "hello world"'
+  $ owk 'put "hello world"'
   hello world
-  $ seq 5 | owk '{ print : num _.1 * 2 }'
+  $ seq 5 | owk '{ put : num _.1 * 2 }'
   2
   4
   6
@@ -37,7 +37,7 @@ String
 ::
 
   s = "hello, owk"
-  print "\u3042" # => あ
+  put "\u3042" # => あ
 
 Number
 ~~~~~~
@@ -48,7 +48,7 @@ Number
 
   i = 2
   j = 10.1
-  print (i * j) # => 20.2
+  put (i * j) # => 20.2
 
 Bool
 ~~~~
@@ -72,8 +72,8 @@ Dict
 ::
 
   d = { key => "value", key2 => 100 }
-  print d.key # => value
-  print (d ["key"]) # => value
+  put d.key # => value
+  put (d ["key"]) # => value
 
 辞書の更新 (merge) は以下のように行います。
 
@@ -90,14 +90,14 @@ List
 ::
 
   L = [1, 2, 3, "4"]
-  print (L[0]) # => 1
+  put (L[0]) # => 1
 
 ``List[start, count]`` で slice を取得できます。
 
 ::
 
   L2 = L[1, 2]
-  print L2 # => [2, 3]
+  put L2 # => [2, 3]
 
 Tuple
 ~~~~~
@@ -132,30 +132,30 @@ Function
 
 ::
 
-  f = { print "hi" }
+  f = { put "hi" }
   f () # => hi
 
-  f2 = _ -> print "hi"
+  f2 = _ -> put "hi"
   f2 () # => hi
 
-  f3 = name -> { print("hi,", name) }
+  f3 = name -> { put("hi,", name) }
   f3 "nakamuray" # => hi, nakamuray
 
   f4 = (x, y) -> { x * y }
-  print (f4(2, 3))
+  put (f4(2, 3))
 
   f5 = x -> y -> { x * y }
-  print (f5(2, 3))
+  put (f5(2, 3))
 
   f6 = i -> { i * 2 }
-  print (f6 10) # => 20
+  put (f6 10) # => 20
 
   f7 = { _ * 2 }
-  print (f7 10) # => 20
+  put (f7 10) # => 20
 
   f8 = 0 -> { "zero" } | n -> { n }
-  print (f8 0) # => zero
-  print (f8 100) # => 100
+  put (f8 0) # => zero
+  put (f8 100) # => 100
 
 Ref
 ~~~
@@ -168,9 +168,9 @@ Ref
 ::
 
   r = ref 0
-  print (r ()) # => 0
+  put (r ()) # => 0
   r := 1
-  print (r ()) # => 1
+  put (r ()) # => 1
 
 Undef
 ~~~~~
@@ -196,7 +196,7 @@ Undef
   f = (("6", 7) = ("6", 7))
   { key1 => g, key2 => h } = { key1 => 8, key2 => 9 }
   
-  ((i, j) -> { print (i, j) }) (10, 11)
+  ((i, j) -> { put (i, j) }) (10, 11)
 
 
 Dict のパターンマッチでは、チェックされる値の側に余分なキーがあっても無視されます。
@@ -217,8 +217,8 @@ Dict のパターンマッチでは、チェックされる値の側に余分な
 ::
 
   func = 0 -> { 0 } | 1 -> { 1 }
-  print (func 1) # => 1
-  print (func 2) # =>
+  put (func 1) # => 1
+  put (func 2) # =>
 
 演算子
 ------
@@ -238,8 +238,8 @@ Dict のパターンマッチでは、チェックされる値の側に余分な
 
   ::
 
-    print : 1 + 1 # => 2
-    print (1 + 1) # => 2
+    put : 1 + 1 # => 2
+    put (1 + 1) # => 2
 
 - ``?``
 
@@ -247,8 +247,8 @@ Dict のパターンマッチでは、チェックされる値の側に余分な
 
   ::
 
-    true ? { print "hi" } # => hi
-    false ? { print "hi?" }
+    true ? { put "hi" } # => hi
+    false ? { put "hi?" }
 
 - ``:=``
 
@@ -288,7 +288,7 @@ owk コマンドについて
 
 ::
 
-  $ seq 10 | owk 'print "init"; end = { print "end" }; main = input -> { print("[", input.0, "]") }'
+  $ seq 10 | owk 'put "init"; end = { put "end" }; main = input -> { put("[", input.0, "]") }'
   init
   [ 1 ]
   [ 2 ]
@@ -311,14 +311,14 @@ owk コマンドについて
 
 ::
 
-  $ seq 10 | owk -e 'print "hi"'
+  $ seq 10 | owk -e 'put "hi"'
   hi
 
 入力をどのようにパースするかは ``-i`` オプションで指定できます。
 
 ::
 
-  $ echo '{ "value": 1 } { "value": 2 } { "value": 3 }' | owk -i json -m 'print $.value'
+  $ echo '{ "value": 1 } { "value": 2 } { "value": 3 }' | owk -i json -m 'put $.value'
   1 
   2 
   3 
@@ -327,5 +327,5 @@ owk コマンドについて
 
 ::
 
-  $ owk -o json 'print { key => "value", key2 => 100 }'
+  $ owk -o json -e 'put { key => "value", key2 => 100 }'
   {"key2":100,"key":"value"}

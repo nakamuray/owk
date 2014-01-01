@@ -2,9 +2,6 @@
 {-# LANGUAGE PatternGuards #-}
 module Owk.Builtin where
 
-import Prelude hiding (print)
-import qualified Prelude
-
 import Control.Applicative ((<$>))
 import Control.Monad ((>=>))
 import Control.Monad.Error (catchError)
@@ -38,7 +35,7 @@ builtins =
 
     , ("sort", builtin1M sort)
     , ("expand", builtin1M expand)
-    , ("printex", builtin1M printex)
+    , ("putex", builtin1M putex)
     , ("split", builtin2 split)
     , ("length", builtin1M length_)
 
@@ -74,8 +71,8 @@ builtins =
     , ("for", builtin1M for)
     , ("while", builtin1M while)
 
-    , ("print", builtin1M print)
-    , ("getobj", builtin1M getobj)
+    , ("put", builtin1M put)
+    , ("get", builtin1M get)
     , ("catch", builtin1M catch_)
     , ("throw", builtin1M throw)
     , ("next", builtin1M $ const next)
@@ -97,8 +94,8 @@ sort d@(Dict _) = sort (list d)
 sort Undef = sort (list Undef)
 sort obj = exception $ String $ "sort: not a List: " <> showText obj
 
-printex :: Object -> Owk Object
-printex = expand >=> print
+putex :: Object -> Owk Object
+putex = expand >=> put
 
 -- TODO: split using regex
 split :: Object -> Object -> Object
@@ -190,9 +187,9 @@ __nmatch__ t pat = do
 -- if .. then .. else
 -- use these like::
 -- if (true): then {
---   print "true"
+--   put "true"
 -- }: else {
---   print "false"
+--   put "false"
 -- }
 if_, then_, else_ :: Function
 if_ b = return . Function $ \thenElseBlock -> funcCall thenElseBlock b
@@ -224,13 +221,13 @@ while cond = return . Function $ \block -> go block Undef
           then funcCall block unit >>= go block
           else return ret
 
-print :: Function
-print o = do
+put :: Function
+put o = do
     lift $ yield o
-    return $ Bool True
+    return Undef
 
-getobj :: Function
-getobj _ = do
+get :: Function
+get _ = do
     mo <- lift await
     case mo of
         Just o  -> return o
