@@ -3,6 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Owk.Type
     ( Owk
+    , OwkPipe
     , Object(..)
     , Function
     , ControlFlow(..)

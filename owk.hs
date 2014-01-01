@@ -3,7 +3,7 @@ module Main where
 
 import Data.Conduit
 
-import Control.Applicative ((<$>))
+import Control.Applicative ((<$>), (<*>))
 import System.Environment (getArgs)
 import System.IO (BufferMode(LineBuffering), hSetBuffering, stdin, stdout)
 import Text.Show.Pretty (ppShow)
@@ -41,6 +41,8 @@ run (Config _ scripts i o) = do
   where
     scriptToOwk (Eval (ScriptText script fname)) = owk fname <$> script
     scriptToOwk (Map (ScriptText script fname)) = owkMap fname <$> script
+    scriptToOwk (Fold (ScriptText script fname)
+                      (ScriptText initscript fname')) = owkFold fname <$> script <*> initscript
     scriptToOwk (Dump (ScriptText script fname)) = do
         pprint . parseOwk fname =<< script
         return $ return ()
@@ -71,6 +73,7 @@ usage = unlines
     , "         -d        dump AST and exit"
     , "         -e        eval mode"
     , "         -m        map mode (default)"
+    , "         -r        reduce (fold) mode"
     , "         -i TYPE   set input TYPE"
     , "         -o TYPE   set output TYPE"
     , "         -io TYPE  set both input/output"
@@ -88,6 +91,7 @@ pprint = putStrLn . ppShow
 data ScriptText = ScriptText (IO T.Text) FilePath
 data OwkScript = Eval ScriptText
           | Map ScriptText
+          | Fold ScriptText ScriptText
           | Dump ScriptText
 
 defaultScript :: OwkScript
@@ -112,6 +116,9 @@ parseArgs' config ("-h":args) = parseArgs' config { showHelp = True } args
 parseArgs' config ("-d":script:args) = parseArgs' config { owkScripts = owkScripts config ++ [Dump $ stext script] } args
 parseArgs' config ("-e":script:args) = parseArgs' config { owkScripts = owkScripts config ++ [Eval $ stext script] } args
 parseArgs' config ("-m":script:args) = parseArgs' config { owkScripts = owkScripts config ++ [Map $ stext script] } args
+parseArgs' config ("-r":script:[]) = parseArgs' config { owkScripts = owkScripts config ++ [Fold (stext script) (stext "")] } []
+parseArgs' config ("-r":script:args@(('-':_):_)) = parseArgs' config { owkScripts = owkScripts config ++ [Fold (stext script) (stext "")] } args
+parseArgs' config ("-r":script:initscript:args) = parseArgs' config { owkScripts = owkScripts config ++ [Fold (stext script) (stext initscript)] } args
 parseArgs' config ("-f":fname:args) = parseArgs' config { owkScripts = owkScripts config ++ [Eval $ ScriptText (TI.readFile fname) fname] } args
 parseArgs' config ("-i":pname:args) =
     case lookup pname inputs of

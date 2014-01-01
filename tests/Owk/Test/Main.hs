@@ -37,6 +37,14 @@ case_sum = do
         }
         |]
 
+case_sum_fold = do
+    ret <- testOwkStringFold script_sum "0" $ map (Number . I ) [1..10]
+    ret @?= [Number (I 55)]
+  where
+    script_sum = [s|
+        acc -> _ -> acc + _
+        |]
+
 case_tail = do
     ret <- testOwkStringMap script_tail $ map (Number . I ) [1..10]
     ret @?= map (Number . I) [2..10]
@@ -198,3 +206,6 @@ testOwkString script inputs = CL.sourceList inputs $= owkString script $$ CL.con
 
 testOwkStringMap :: T.Text -> [Object] -> IO [Object]
 testOwkStringMap script inputs = CL.sourceList inputs $= owkStringMap script $$ CL.consume
+
+testOwkStringFold :: T.Text -> T.Text -> [Object] -> IO [Object]
+testOwkStringFold script initscript inputs = CL.sourceList inputs $= owkStringFold script initscript $$ CL.consume

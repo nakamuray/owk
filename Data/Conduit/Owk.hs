@@ -2,10 +2,14 @@
 module Data.Conduit.Owk
   ( owkString
   , owkStringMap
+  , owkStringFold
   , owkFile
   , owkFileMap
+  -- TODO:
+  --, owkFileFold
   , owk
   , owkMap
+  , owkFold
   ) where
 
 import Data.Conduit
@@ -35,6 +39,9 @@ owkString script = owk "<string>" script
 owkStringMap :: Text -> Conduit Object IO Object
 owkStringMap script = owkMap "<string>" script
 
+owkStringFold :: Text -> Text -> Conduit Object IO Object
+owkStringFold script initscript = owkFold "<string>" script initscript
+
 owkFile :: FilePath -> Conduit Object IO Object
 owkFile fname = do
     script <- liftIO $ TI.readFile fname
@@ -61,14 +68,7 @@ owkMap fname script =
         Left e     -> error e
         Right prog -> do
             n <- liftIO $ Namespace.fromList globalNamespace
-            -- run script and get last expression as a main function
-            (main, s) <- flip runOwk' n $ do
-                g <- asks Namespace.extractGlobal
-                s <- liftIO $ Namespace.create g
-                main <- local (const s) $ do
-                    Namespace.define "__file__" $ String (T.pack fname)
-                    interpret prog `catchError` catchExit
-                return (main, s)
+            (main, s) <- runOwk'' fname prog n
             -- and then, run `main`
             awaitForever $ \obj -> do
                 runOwk (funcCall main obj `catchError` ignoreNext `catchError` catchExit >> return ()) n
@@ -79,14 +79,49 @@ owkMap fname script =
                     runOwk (funcCall end unit `catchError` ignoreNext `catchError` catchExit >> return ()) n
                     return ()
                 Nothing  -> return ()
-  where
-    ignoreNext Next = return Undef
-    ignoreNext e    = throwError e
+
+owkFold :: String -> Text -> Text -> Conduit Object IO Object
+owkFold fname script initscript =
+    case (parseOwk fname script, parseOwk fname initscript) of
+        (Left e, _) -> error e
+        (_, Left e) -> error e
+        (Right prog, Right proginit) -> do
+            n <- liftIO $ Namespace.fromList globalNamespace
+            (initval, _) <- runOwk'' fname proginit n
+            (main, _) <- runOwk'' fname prog n
+            -- and then, run `main`
+            go n main initval
+          where
+            go n main acc = do
+                mobj <- await
+                case mobj of
+                    Nothing  -> yield acc
+                    Just obj -> do
+                        acc' <- runOwk' (f main acc obj `catchError` ignoreNext `catchError` catchExit) n
+                        go n main acc'
+            f main acc obj = do
+                f' <- funcCall main acc
+                funcCall f' obj
+
+-- run program and return last expression as a main function
+runOwk'' :: String -> AST.Program -> Namespace.Namespace -> OwkPipe (Object, Scope)
+runOwk'' fname prog n = flip runOwk' n $ do
+    g <- asks Namespace.extractGlobal
+    s <- liftIO $ Namespace.create g
+    main <- local (const s) $ do
+        Namespace.define "__file__" $ String (T.pack fname)
+        interpret prog `catchError` catchExit
+    return (main, s)
 
 -- TODO: don't exit inside conduit
+catchExit :: ControlFlow -> Owk Object
 catchExit (Exit 0) = liftIO exitSuccess
 catchExit (Exit c) = liftIO $ exitWith $ ExitFailure c
 catchExit e        = throwError e
+
+ignoreNext :: ControlFlow -> Owk Object
+ignoreNext Next = return Undef
+ignoreNext e    = throwError e
 
 -- TODO: load haskell modules at runtime
 globalNamespace :: [(Text, Object)]
