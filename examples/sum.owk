@@ -1,11 +1,10 @@
-# seq 10 | owk -f sum.owk
-# FIXME:
+# seq 10 | owk -mf sum.owk
 result = ref 0;
-
-main = {
-  result := result () + num _.1;
-};
 
 end = {
   put : result ();
+};
+
+main = {
+  result := result () + num _.1;
 };

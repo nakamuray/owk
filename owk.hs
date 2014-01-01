@@ -74,6 +74,8 @@ usage = unlines
     , "         -e        eval mode"
     , "         -m        map mode (default)"
     , "         -r        reduce (fold) mode"
+    , "         -mf       map mode (read from script file)"
+    , "         -rf       reduce mode (read from script file)"
     , "         -i TYPE   set input TYPE"
     , "         -o TYPE   set output TYPE"
     , "         -io TYPE  set both input/output"
@@ -120,6 +122,8 @@ parseArgs' config ("-r":script:[]) = parseArgs' config { owkScripts = owkScripts
 parseArgs' config ("-r":script:args@(('-':_):_)) = parseArgs' config { owkScripts = owkScripts config ++ [Fold (stext script) (stext "")] } args
 parseArgs' config ("-r":script:initscript:args) = parseArgs' config { owkScripts = owkScripts config ++ [Fold (stext script) (stext initscript)] } args
 parseArgs' config ("-f":fname:args) = parseArgs' config { owkScripts = owkScripts config ++ [Eval $ ScriptText (TI.readFile fname) fname] } args
+parseArgs' config ("-mf":fname:args) = parseArgs' config { owkScripts = owkScripts config ++ [Map $ ScriptText (TI.readFile fname) fname] } args
+parseArgs' config ("-rf":fname:args) = parseArgs' config { owkScripts = owkScripts config ++ [Fold (ScriptText (TI.readFile fname) fname) (stext "")] } args
 parseArgs' config ("-i":pname:args) =
     case lookup pname inputs of
         Just input -> parseArgs' config { owkInput = input } args
