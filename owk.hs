@@ -56,6 +56,7 @@ inputs =
     [ ("line", Line.toObject)
     , ("ltsv", LTSV.toObject)
     , ("json", JSON.toObject)
+    , ("jsonpp", JSON.toObject)
     , ("apachelog", ApacheLog.toObject)
     ]
 
