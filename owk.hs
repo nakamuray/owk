@@ -44,7 +44,10 @@ run (Config _ scripts i o) = do
     scriptToOwk (Fold (ScriptText script fname)
                       (ScriptText initscript fname')) = owkFold fname <$> script <*> initscript
     scriptToOwk (Dump (ScriptText script fname)) = do
-        pprint . parseOwk fname =<< script
+        ret <- parseOwk fname <$> script
+        case ret of
+            Right prog -> pprint prog
+            Left  e    -> putStrLn e
         return $ return ()
 
 
