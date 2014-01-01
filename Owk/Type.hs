@@ -48,8 +48,6 @@ import Control.Monad.Reader (MonadReader, ReaderT(..), runReaderT)
 import Control.Monad.Trans (MonadIO, MonadTrans, lift, liftIO)
 import Data.Aeson (encode)
 import Data.Attoparsec.Number (Number(..))
--- FIXME: don't use internal module
-import Data.Conduit.Internal (ConduitM)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import Data.Typeable (Typeable)
