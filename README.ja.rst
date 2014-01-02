@@ -115,9 +115,10 @@ Function
 
 関数です。
 
-``pattern -> { block }`` の形で定義します。
+``pattern (guard) -> { block }`` の形で定義します。
 ``block`` には複数の式を記述できます。
-``pattern ->`` 部分は省略可能で、その場合 ``_ ->`` が補われます。
+``pattern (guard) ->`` 部分は省略可能で、その場合 ``_ ->`` が補われます。
+``(guard)`` 部分のみを省略することもできます。
 また、 ``block`` が単一の式のみからなる場合は ``{ }`` を省略することができます。
 
 ``|`` で区切ることにより、複数のパターン・ブロックが記述できます。
@@ -156,6 +157,10 @@ Function
   f8 = 0 -> { "zero" } | n -> { n }
   put (f8 0) # => zero
   put (f8 100) # => 100
+
+  f9 = n (n > 5) -> "greater than five" | n -> "less than equal five"
+  put (f9 5) # => less than equal five
+  put (f9 6) # => greater than five
 
 Ref
 ~~~

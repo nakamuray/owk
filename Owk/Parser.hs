@@ -138,7 +138,7 @@ parensesEnclosed = do
 tupleBody :: Parser Expression
 tupleBody = Tuple <$> makeListParser expression
 
--- [ pattern -> ] { expression [; expression ...] } [ | [pattern -> ] { expression ...]
+-- [ pattern [(guard expression)] -> ] { expression [; expression ...] } [ | [pattern -> ] { expression ...]
 function :: Parser Expression
 function = Function <$> ((try function' <|> function'') `sepBy1` funcSep)
   where
@@ -146,23 +146,28 @@ function = Function <$> ((try function' <|> function'') `sepBy1` funcSep)
         whiteSpace'
         lexeme' $ reservedOp' "|"
 
-function' :: Parser (Pattern, [Expression])
+function' :: Parser (Pattern, Maybe Expression, [Expression])
 function' = do
-    pat <- funcPattern
+    (pat, guard) <- funcPatternGuard
     es <- braces block1
-    return $ (pat, es)
+    return $ (pat, guard, es)
   <?> "function"
 
-funcPattern :: Parser Pattern
-funcPattern = option (PVariable "_") (try pattern <* symbol "->")
-    <?> "function parameters"
+funcPatternGuard :: Parser (Pattern, Maybe Expression)
+funcPatternGuard = option (PVariable "_", Nothing) $ try $ do
+    pat <- pattern
+    guard <- option Nothing $ Just <$> parens expression
+    symbol "->"
+    return (pat, guard)
+  <?> "function parameters"
 
-function'' :: Parser (Pattern, [Expression])
+function'' :: Parser (Pattern, Maybe Expression, [Expression])
 function'' = do
     pat <- try pattern
+    guard <- option Nothing $ Just <$> parens expression
     symbol "->"
     e <- expression
-    return $ (pat, [e])
+    return $ (pat, guard, [e])
   <?> "function"
 
 define :: Parser Expression

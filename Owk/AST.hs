@@ -6,7 +6,7 @@ import Data.Text (Text)
 data Program = Program [Expression]
     deriving (Eq, {- Read, -} Show)
 
-data Expression = Function [(Pattern, [Expression])]
+data Expression = Function [(Pattern, Maybe Expression, [Expression])]
                 | Define Pattern Expression
                 | FuncCall Expression Expression
                 | Variable Text

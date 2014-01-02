@@ -30,13 +30,18 @@ expr (AST.Function pbs) = do
     return $ Type.Function $ func s pbs
   where
     func _ [] _ = return $ Type.Undef
-    func s ((p, body) : pbs') v = do
+    func s ((p, mguard, body) : pbs') v = do
         case match p v of
             Nothing -> func s pbs' v
             Just ms -> do
                 ns <- liftIO $ Namespace.fromList ms
                 let scope = Local s ns
-                local (const scope) $ foldM (const expr) Type.Undef body
+                Type.Bool gsuccess <- case mguard of
+                    Just guard -> bool <$> (local (const scope) $ expr guard)
+                    Nothing    -> return $ Type.Bool True
+                if gsuccess
+                  then local (const scope) $ foldM (const expr) Type.Undef body
+                  else func s pbs' v
 expr (Define p e) = do
     v <- expr e
     case match p v of

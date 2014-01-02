@@ -138,6 +138,10 @@ case_readme_function = do
         f8 = 0 -> { "zero" } | n -> { n }
         put (f8 0) # => zero
         put (f8 100) # => 100
+
+        f9 = n (n > 5) -> "greater than five" | n -> "less than equal five"
+        put (f9 5) # => less than equal five
+        put (f9 6) # => greater than five
     |]
     ret @?= [ String "hi"
             , String "hi"
@@ -148,6 +152,8 @@ case_readme_function = do
             , Number (I 20)
             , String "zero"
             , Number (I 100)
+            , String "less than equal five"
+            , String "greater than five"
             ]
 
 case_readme_ref = do
