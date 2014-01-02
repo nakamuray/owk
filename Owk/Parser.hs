@@ -97,7 +97,7 @@ unary :: String -> T.Text -> Operator Parser Expression
 unary  name fun       = Prefix (do{ reservedOp name; return $ \x -> FuncCall (Variable fun) x } <?> "operator")
 
 binary :: String -> T.Text -> Assoc -> Operator Parser Expression
-binary  name fun assoc = Infix (do{ reservedOp2 name; return $ \x y -> FuncCall (Variable fun) (Tuple [x, y]) } <?> "binary operator") assoc
+binary  name fun assoc = Infix (do{ reservedOp2 name; return $ \x y -> FuncCall (FuncCall (Variable fun) x) y } <?> "binary operator") assoc
 
 reservedOp :: String -> Parser ()
 reservedOp name = try $ lexeme $ reservedOp' name

@@ -285,17 +285,7 @@ builtin1M :: (Object -> Owk Object) -> Object
 builtin1M f = Function f
 
 builtin2 :: (Object -> Object -> Object) -> Object
-builtin2 f = Function go
-  where
-    go (Tuple os)
-        | arg1:arg2:[] <- os = return $ f arg1 arg2
-        | arg1:[] <- os = return $ f arg1 Undef
-    go arg = return $ f arg Undef
+builtin2 f = Function (\x -> return $ Function (\y -> return $ f x y))
 
 builtin2M :: (Object -> Object -> Owk Object) -> Object
-builtin2M f = Function go
-  where
-    go (Tuple os)
-        | arg1:arg2:[] <- os = f arg1 arg2
-        | arg1:[] <- os = f arg1 Undef
-    go arg = f arg unit
+builtin2M f = Function (\x -> return $ Function (\y -> f x y))
