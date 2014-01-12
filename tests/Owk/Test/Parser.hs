@@ -60,6 +60,9 @@ case_define_6 = parseOwk "<test>" "0 = 0" @?= Right (Program [Define (PNumber (I
 
 case_operator_0 = parseOwk "<test>" "1 + 2" @?= Right (Program [FuncCall (FuncCall (Variable "+") (Number (I 1))) (Number (I 2))])
 case_operator_1 = parseOwk "<test>" "`+` 1 2" @?= Right (Program [FuncCall (FuncCall (Variable "+") (Number (I 1))) (Number (I 2))])
+case_opratorr_2 = parseOwk "<test>" "`+:` = undef" @?= Right (Program [Define (PVariable "+:") (Variable "undef")])
+case_opratorr_3 = parseOwk "<test>" "1 +: 2 *: 3" @?= Right (Program [FuncCall (FuncCall (Variable "+:") (Number (I 1))) (FuncCall (FuncCall (Variable "*:") (Number (I 2))) (Number (I 3)))])
+case_opratorr_4 = parseOwk "<test>" "1 *: 2 +: 3" @?= Right (Program [FuncCall (FuncCall (Variable "+:") (FuncCall (FuncCall (Variable "*:") (Number (I 1))) (Number (I 2)))) (Number (I 3))])
 
 case_newline_0 = parseOwk "<test>" "1; 2; 3" @=? parseOwk "<test>" "1\n2\n3\n"
 case_newline_1 = parseOwk "<test>" "1; 2; 3" @=? parseOwk "<test>" "1\n\n2\n\n3\n"

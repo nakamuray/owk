@@ -82,14 +82,14 @@ blankLines = do
 
 table :: OperatorTable Parser Expression
 table = [ [unary "-" "__neg__", unary "+" "__num__"]
-        , [binary "*" AssocLeft, binary "/" AssocLeft, binary "%" AssocLeft]
-        , [binary "+" AssocLeft, binary "-" AssocLeft]
-        , [binary ">" AssocLeft, binary "<" AssocLeft, binary ">=" AssocLeft, binary "<=" AssocLeft]
+        , [binary' "*" AssocLeft, binary' "/" AssocLeft, binary' "%" AssocLeft]
+        , [binary' "+" AssocLeft, binary' "-" AssocLeft]
+        , [binary' ">" AssocLeft, binary' "<" AssocLeft]
         , [binary "==" AssocNone, binary "!=" AssocNone
           , binary "=~" AssocNone, binary "!~" AssocNone]
         , [unary "!" "!"]
         , [binary "&&" AssocNone, binary "||" AssocNone]
-        , [binary ":" AssocRight, binary "?" AssocLeft]
+        , [binary' ":" AssocRight, binary' "?" AssocLeft]
         , [binary ":=" AssocNone]
         ]
 
@@ -98,6 +98,12 @@ unary  name fun       = Prefix (do{ reservedOp name; return $ \x -> FuncCall (Va
 
 binary :: String -> Assoc -> Operator Parser Expression
 binary name assoc = Infix (do{ reservedOp2 name; return $ \x y -> FuncCall (FuncCall (Variable $ T.pack name) x) y } <?> "binary operator") assoc
+
+binary' :: String -> Assoc -> Operator Parser Expression
+binary' prefix assoc = Infix (do {
+    name <- userDefinedOp2 prefix;
+    return $ \x y -> FuncCall (FuncCall (Variable name) x) y } <?> "binary operator"
+  ) assoc
 
 reservedOp :: String -> Parser ()
 reservedOp name = try $ lexeme $ reservedOp' name
@@ -112,6 +118,12 @@ reservedOp' name = do
 
 opLetter :: Parser Char
 opLetter = oneOf "!%&*+-/:<=>?|~"
+
+userDefinedOp2 :: String -> Parser T.Text
+userDefinedOp2 prefix = try $ lexeme' $ do
+    string prefix
+    cs <- many opLetter
+    return $ T.pack $ prefix ++ cs
 
 term :: Parser Expression
 term = foldl1 FuncCall <$> many1 term'
