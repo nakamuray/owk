@@ -82,22 +82,22 @@ blankLines = do
 
 table :: OperatorTable Parser Expression
 table = [ [unary "-" "__neg__", unary "+" "__num__"]
-        , [binary "*" "__mul__" AssocLeft, binary "/" "__div__" AssocLeft, binary "%" "__mod__" AssocLeft]
-        , [binary "+" "__add__" AssocLeft, binary "-" "__sub__" AssocLeft]
-        , [binary ">" "__gt__" AssocLeft, binary "<" "__lt__" AssocLeft, binary ">=" "__ge__" AssocLeft, binary "<=" "__le__" AssocLeft]
-        , [binary "==" "__eq__" AssocNone, binary "!=" "__nq__" AssocNone
-          , binary "=~" "__match__" AssocNone, binary "!~" "__nmatch__" AssocNone]
+        , [binary "*" AssocLeft, binary "/" AssocLeft, binary "%" AssocLeft]
+        , [binary "+" AssocLeft, binary "-" AssocLeft]
+        , [binary ">" AssocLeft, binary "<" AssocLeft, binary ">=" AssocLeft, binary "<=" AssocLeft]
+        , [binary "==" AssocNone, binary "!=" AssocNone
+          , binary "=~" AssocNone, binary "!~" AssocNone]
         , [unary "!" "__not__"]
-        , [binary "&&" "__and__" AssocNone, binary "||" "__or__" AssocNone]
-        , [binary ":" "__app__" AssocRight, binary "?" "__if__" AssocLeft]
-        , [binary ":=" "__wref__" AssocNone]
+        , [binary "&&" AssocNone, binary "||" AssocNone]
+        , [binary ":" AssocRight, binary "?" AssocLeft]
+        , [binary ":=" AssocNone]
         ]
 
 unary :: String -> T.Text -> Operator Parser Expression
 unary  name fun       = Prefix (do{ reservedOp name; return $ \x -> FuncCall (Variable fun) x } <?> "operator")
 
-binary :: String -> T.Text -> Assoc -> Operator Parser Expression
-binary  name fun assoc = Infix (do{ reservedOp2 name; return $ \x y -> FuncCall (FuncCall (Variable fun) x) y } <?> "binary operator") assoc
+binary :: String -> Assoc -> Operator Parser Expression
+binary name assoc = Infix (do{ reservedOp2 name; return $ \x y -> FuncCall (FuncCall (Variable $ T.pack name) x) y } <?> "binary operator") assoc
 
 reservedOp :: String -> Parser ()
 reservedOp name = try $ lexeme $ reservedOp' name
@@ -109,9 +109,9 @@ reservedOp' :: String -> Parser ()
 reservedOp' name = do
     string name
     notFollowedBy opLetter <?> ("end of " ++ show name)
-  where
-    opLetter = oneOf "!%&*+-/:<=>?|~"
 
+opLetter :: Parser Char
+opLetter = oneOf "!%&*+-/:<=>?|~"
 
 term :: Parser Expression
 term = foldl1 FuncCall <$> many1 term'
@@ -175,7 +175,7 @@ define = Define <$> pattern <* symbol "=" <*> expression
     <?> "define"
 
 variable :: Parser Expression
-variable = Variable <$> varName
+variable = Variable <$> (varName <|> varOp)
     <?> "variable"
 
 string_ :: Parser Expression
@@ -230,7 +230,7 @@ pattern :: Parser Pattern
 pattern = lexeme (pVariable <|> pString <|> pNumber <|> pTuple <|> pList <|> pDict)
 
 pVariable :: Parser Pattern
-pVariable = PVariable <$> varName
+pVariable = PVariable <$> (varName <|> varOp)
 
 pString :: Parser Pattern
 pString = PString <$> string_'
@@ -257,6 +257,9 @@ varName = lexeme $ do
     h <- oneOf $ "$_" ++ ['a'..'z'] ++ ['A'..'Z']
     t <- many $ oneOf "$_" <|> alphaNum
     return $ T.pack $ h : t
+
+varOp :: Parser T.Text
+varOp = lexeme $ between (symbol "`") (symbol "`") $ T.pack <$> many opLetter
 
 subscripts :: Parser [T.Text]
 subscripts = do
