@@ -206,6 +206,15 @@ case_readme_operator_if = do
     |]
     ret @?= [String "hi"]
 
+case_readme_operator_variable = do
+    ret <- flip testOwkString [] [s|
+        put : `+` 1 2  # => 3
+
+        `+:` = x -> y -> put (x, "plus", y)
+        1 +: 2  # => 1 plus 2
+    |]
+    ret @?= [Number (I 3), Tuple [Number (I 1), String "plus", Number (I 2)]]
+
 
 testOwkString :: T.Text -> [Object] -> IO [Object]
 testOwkString script inputs = CL.sourceList inputs $= owkString script $$ CL.consume
