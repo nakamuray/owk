@@ -18,7 +18,7 @@ executable owk
   main-is:             owk.hs
   -- other-modules:       
   build-depends:       base >=4.5 && < 4.7
-                     , aeson
+                     , aeson >= 0.7.0
                      , aeson-pretty
                      , attoparsec
                      , attoparsec-conduit
@@ -30,6 +30,7 @@ executable owk
                      , old-locale
                      , parsers
                      , pretty-show
+                     , scientific
                      , stm
                      , text
                      , text-icu
@@ -49,7 +50,7 @@ test-suite test-owk
   main-is:             test-owk.hs
 
   build-depends:       base >=4.5 && < 4.7
-                     , aeson
+                     , aeson >= 0.7.0
                      , attoparsec
                      , attoparsec-conduit
                      , bytestring
@@ -60,6 +61,7 @@ test-suite test-owk
                      , old-locale
                      , parsers
                      , pretty-show
+                     , scientific
                      , stm
                      , text
                      , text-icu

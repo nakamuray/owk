@@ -11,6 +11,7 @@ import Control.Applicative ((<$), (<$>), (<|>))
 import Data.Aeson as A
 import Data.Aeson.Encode.Pretty (encodePretty)
 import Data.Attoparsec.ByteString.Char8 (endOfInput, skipSpace)
+import Data.Scientific (Scientific(..), fromFloatDigits)
 import System.IO (hPutStrLn, stderr)
 
 import qualified Data.Conduit.Attoparsec as CA
@@ -51,7 +52,8 @@ instance FromJSON O.Object where
     parseJSON (A.Object h) = O.Dict . H.fromList <$> (mapM (\(k, v) -> parseJSON v >>= \v' -> return (k, v')) $ H.toList h)
     parseJSON (A.Array v) = O.List <$> V.mapM parseJSON v
     parseJSON (A.String t) = return $ O.String t
-    parseJSON (A.Number n) = return $ O.Number n
+    parseJSON (A.Number n) | base10Exponent n == 0 = return $ O.Number $ I $ coefficient n
+                           | otherwise             = return $ O.Number $ D $ fromRational . toRational $ n
     parseJSON (A.Bool b) = return $ O.Bool b
     parseJSON A.Null = return O.Undef
 
@@ -60,7 +62,8 @@ instance ToJSON O.Object where
     toJSON (O.List v) = A.Array $ V.map toJSON v
     toJSON (O.Tuple os) = A.Array . V.fromList $ map toJSON os
     toJSON (O.String t) = A.String t
-    toJSON (O.Number n) = A.Number n
+    toJSON (O.Number (I i)) = A.Number $ fromInteger i
+    toJSON (O.Number (D d)) = A.Number $ fromFloatDigits d
     toJSON (O.Bool b) = A.Bool b
     toJSON (O.Function _) = A.String "<Function>"
     toJSON (O.Ref _) = A.String "<Ref>"
