@@ -87,7 +87,7 @@ table = [ [unary "-" "__neg__", unary "+" "__num__"]
         , [binary ">" AssocLeft, binary "<" AssocLeft, binary ">=" AssocLeft, binary "<=" AssocLeft]
         , [binary "==" AssocNone, binary "!=" AssocNone
           , binary "=~" AssocNone, binary "!~" AssocNone]
-        , [unary "!" "__not__"]
+        , [unary "!" "!"]
         , [binary "&&" AssocNone, binary "||" AssocNone]
         , [binary ":" AssocRight, binary "?" AssocLeft]
         , [binary ":=" AssocNone]

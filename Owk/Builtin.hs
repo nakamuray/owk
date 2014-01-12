@@ -31,6 +31,7 @@ builtins =
     , ("str", builtin1 str)
     , ("num", builtin1 num)
     , ("bool", builtin1 bool)
+    , ("not", builtin1 __not__)
     , ("ref", Function $ \obj -> Ref <$> ref obj)
 
     , ("sort", builtin1M sort)
@@ -55,10 +56,10 @@ builtins =
     , ("<=", cmpop (<=))
     , ("==", cmpop (==))
     , ("/=", cmpop (/=))
-    , ("__not__", builtin1 __not__)
+    , ("!", builtin1 __not__)
     , ("$$", builtin2 __and__)
     , ("||", builtin2 __or__)
-    , ("?", builtin2M __if__)
+    , ("?", builtin2M __when__)
     , (":=", builtin2M __wref__)
     , ("=~", builtin2M __match__)
     , ("!~", builtin2M __nmatch__)
@@ -162,8 +163,8 @@ __get__' (Dict h:String name:_) = return $ H.lookupDefault Undef name h
 __get__' (obj:_) = exception $ String $ "__get__: not a Dict: " <> showText obj
 __get__'  [] = error "should not be reached"
 
-__if__ :: Object -> Object -> Owk Object
-__if__ b block =
+__when__ :: Object -> Object -> Owk Object
+__when__ b block =
     case bool b of
         Bool True  -> funcCall block unit
         Bool False -> return Undef
