@@ -7,7 +7,7 @@ awk 的に使えることを目指して作られている DSL/interpreter で�
 
 ::
 
-  $ owk 'put "hello world"'
+  $ owk -e 'put "hello world"'
   hello world
   $ seq 5 | owk '{ put : _.1 * 2 }'
   2
@@ -15,6 +15,10 @@ awk 的に使えることを目指して作られている DSL/interpreter で�
   6
   8
   10
+  $ echo '{"name":"roi"}{"name":"zak"}' | owk -i json '{ put _.name }'
+  roi
+  zak
+
 
 
 言語仕様について
