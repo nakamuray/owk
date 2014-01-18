@@ -27,7 +27,7 @@ interpret_ (Program es) = mapM_ expr es
 expr :: Expression -> Owk Object
 expr (AST.Function pbs) = do
     s <- ask
-    return $ Type.Function $ func s pbs
+    return $ Type.Function $ func s (exprBodies pbs)
   where
     func _ [] _ = return $ Type.Undef
     func s ((p, mguard, body) : pbs') v = do
@@ -36,12 +36,18 @@ expr (AST.Function pbs) = do
             Just ms -> do
                 ns <- liftIO $ Namespace.fromList ms
                 let scope = Local s ns
-                Type.Bool gsuccess <- case mguard of
-                    Just guard -> bool <$> (local (const scope) $ expr guard)
-                    Nothing    -> return $ Type.Bool True
-                if gsuccess
-                  then local (const scope) $ foldM (const expr) Type.Undef body
-                  else func s pbs' v
+                case mguard of
+                    Nothing    -> func' scope body
+                    Just guard -> do
+                        gsuccess <- bool <$> (local (const scope) guard)
+                        case gsuccess of
+                            Type.Bool True -> func' scope body
+                            _              -> func s pbs' v
+    func' _ [] = return Type.Undef
+    func' scope [o] = local (const scope) o
+    func' scope body = local (const scope) $ foldM (const id) Type.Undef body
+    exprBodies [] = []
+    exprBodies ((p, mguard, body) : pbs'') = (p, expr <$> mguard, map expr body) : exprBodies pbs''
 expr (Define p e) = do
     v <- expr e
     case match p v of
@@ -49,16 +55,25 @@ expr (Define p e) = do
         Just ms -> do
             mapM_ (uncurry define) ms
             return v
-expr (FuncCall efunc earg) = do
-    func <- expr efunc
-    arg <- expr earg
-    funcCall func arg
+expr (FuncCall efunc earg) =
+    let ofunc = expr efunc
+        oarg = expr earg
+    in do
+        func <- ofunc
+        arg <- oarg
+        funcCall func arg
 expr (Variable name) = Namespace.lookup name
 expr (AST.String s) = return $ Type.String s
 expr (AST.Number n) = return $ Type.Number n
-expr (AST.Tuple es) = Type.Tuple <$> mapM expr es
-expr (AST.List es) = Type.List . V.fromList <$> mapM expr es
-expr (AST.Dict kvs) = Type.Dict . H.fromList <$> mapM (\(k, v) -> expr v >>= \v' -> return (k, v')) kvs
+expr (AST.Tuple es) =
+    let es' = map expr es
+    in Type.Tuple <$> sequence es'
+expr (AST.List es) =
+    let es' = map expr es
+    in Type.List . V.fromList <$> sequence es'
+expr (AST.Dict kvs) =
+    let kvs' = map (expr <$>) kvs
+    in Type.Dict . H.fromList <$> mapM (\(k, v) -> v >>= \v' -> return (k, v')) kvs'
 expr AST.Undef = return Type.Undef
 
 funcCall :: Object -> Object -> Owk Object
