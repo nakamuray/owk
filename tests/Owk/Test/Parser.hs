@@ -24,6 +24,10 @@ case_unit_0 = parseOwk "<test>" "()" @?= Right (Program [Tuple []])
 case_string_0 = parseOwk "<test>" "\"hello world\"" @?= Right (Program [String "hello world"])
 case_string_1 = parseOwk "<test>" "\"\\u3042\"" @?= Right (Program [String "あ"])
 
+case_dotString_0 = parseOwk "<test>" ".string" @?= Right (Program [String "string"])
+case_dotString_1 = parseOwk "<test>" ".1" @?= Right (Program [String "1"])
+case_dotString_2 = parseOwk "<test>" "x.y.z" @?= Right (Program [FuncCall (FuncCall (Variable "x") (String "y")) (String "z")])
+
 case_number_0 = parseOwk "<test>" "100" @?= Right (Program [Number (I 100)])
 case_number_1 = parseOwk "<test>" "100.0" @?= Right (Program [Number (D 100.0)])
 case_number_2 = parseOwk "<test>" "-100" @?= Right (Program [FuncCall (Variable "__neg__") (Number (I 100))])

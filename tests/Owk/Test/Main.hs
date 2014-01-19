@@ -66,8 +66,9 @@ case_readme_string = do
     ret <- flip testOwkString [] [s|
         s = "hello, owk"
         put "\u3042"
+        put .hello
     |]
-    ret @?= [String "あ"]
+    ret @?= [String "あ", String "hello"]
 
 case_readme_number = do
     ret <- flip testOwkString [] [s|
@@ -88,13 +89,14 @@ case_readme_bool = do
 case_readme_dict = do
     ret <- flip testOwkString [] [s|
         d = { key => "value", key2 => 100 }
-        put d.key # => value
+        put (d "key") # => value
+        put (d.key) # => value
         put (d ["key"]) # => value
         d2 = d { key2 => 200, key3 => "spam" }
         d3 = d2 ["key4", "egg"]
         put(d2.key2, d3.key4)
     |]
-    ret @?= [String "value", String "value", Tuple [Number (I 200), String "egg"]]
+    ret @?= [String "value", String "value", String "value", Tuple [Number (I 200), String "egg"]]
 
 case_readme_list = do
     ret <- flip testOwkString [] [s|
