@@ -15,7 +15,7 @@ awk 的に使えることを目指して作られている DSL/interpreter で�
   6
   8
   10
-  $ echo '{"name":"roi"}{"name":"zak"}' | owk -i json '{ put _.name }'
+  $ echo '{"name":"roi"}{"name":"zak"}' | owk -i json '{ put : _.name }'
   roi
   zak
 
