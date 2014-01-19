@@ -100,8 +100,9 @@ funcCall (Type.Dict h) (Type.List v)
         let [key, val] = V.toList v
             Type.String key' = str key
         in return $ Type.Dict $ H.insert key' val h
-funcCall (Type.Dict _) _ = exception $ Type.String $ "dict only accept 1 other dict"
-funcCall obj _ = exception $ Type.String $ "not a function: " <> showText obj
+funcCall (Type.Dict h) (Type.String k) = return $ H.lookupDefault Type.Undef k h
+funcCall (Type.Dict _) o = exception $ Type.String $ "dict accept other dict or string, but :" <> showText o
+funcCall obj _ = exception $ Type.String $ "not a callable: " <> showText obj
 
 match :: Pattern -> Object -> Maybe [(Text, Object)]
 match (PVariable v) o = Just [(v, o)]

@@ -61,6 +61,16 @@ case_dict_2 = testOwk_ $ do
     d' <- funcCall d $ Type.List $ V.fromList [Type.String "key3", Type.String "value3"]
     liftIO $ d' @?= Type.Dict (H.fromList [("key2", Type.String "value2"), ("key3", Type.String "value3"), ("key1", Type.String "value1")])
 
+case_dict_3 = testOwk_ $ do
+    let d = Type.Dict $ H.fromList [("key1", Type.String "value1"), ("key2", Type.String "value2")]
+    v <- funcCall d $ Type.String "key1"
+    liftIO $ v @?= Type.String "value1"
+
+case_dict_4 = testOwk_ $ do
+    let d = Type.Dict $ H.fromList [("key1", Type.String "value1"), ("key2", Type.String "value2")]
+    v <- funcCall d $ Type.String "key3"
+    liftIO $ v @?= Type.Undef
+
 case_define_1 = testOwk_ $ do
     ret <- expr $ Define (PVariable "x") (AST.String "hello")
     v <- Namespace.lookup "x"
