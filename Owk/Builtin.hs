@@ -69,6 +69,7 @@ builtins =
     , ("else", builtin1M else_)
     , ("case", builtin1M case_)
     , ("for", builtin1M for)
+    , ("map", builtin2M map_)
     , ("while", builtin1M while)
 
     , ("put", builtin1M put)
@@ -204,6 +205,10 @@ for (List v) = return . Function $ \block -> V.foldM (\_ obj -> funcCall block o
 for d@(Dict _) = for (list d)
 for Undef = for (list Undef)
 for _ = exception $ String "for: not implemented"
+
+map_ :: Object -> Object -> Owk Object
+map_ f (List v) = List <$> V.mapM (funcCall f) v
+map_ f o = map_ f $ list o
 
 while :: Function
 while cond = return . Function $ \block -> go block Undef
