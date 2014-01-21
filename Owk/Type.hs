@@ -263,6 +263,7 @@ list :: Object -> Object
 list o@(List _) = o
 list (Dict h) = List $ V.fromList $ map String $ H.keys h
 list Undef = List V.empty
+list (String t) = List $ V.fromList $ map (String . T.singleton) $ T.unpack t
 list _ = undefined
 
 str :: Object -> Object
