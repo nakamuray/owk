@@ -105,7 +105,10 @@ funcCall (Type.Dict _) o = exception $ Type.String $ "dict accept other dict or 
 funcCall obj _ = exception $ Type.String $ "not a callable: " <> showText obj
 
 match :: Pattern -> Object -> Maybe [(Text, Object)]
-match (PVariable v) o = Just [(v, o)]
+match (PVariable v Nothing) o = Just [(v, o)]
+match (PVariable v (Just p)) o = do
+    vos <- match p o
+    return $ (v, o) : vos
 match (PString p) (Type.String t)
     | p == t = Just []
     | otherwise = Nothing

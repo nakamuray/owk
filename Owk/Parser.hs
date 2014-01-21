@@ -160,7 +160,7 @@ function' = do
   <?> "function"
 
 funcPatternGuard :: Parser (Pattern, Maybe Expression)
-funcPatternGuard = option (PVariable "_", Nothing) $ try $ do
+funcPatternGuard = option (PVariable "_" Nothing, Nothing) $ try $ do
     pat <- pattern
     guard <- option Nothing $ Just <$> parens expression
     symbol "->"
@@ -239,7 +239,7 @@ pattern :: Parser Pattern
 pattern = lexeme (pVariable <|> pString <|> pNumber <|> pTuple <|> pList <|> pDict)
 
 pVariable :: Parser Pattern
-pVariable = PVariable <$> (varName <|> varOp)
+pVariable = PVariable <$> (varName <|> varOp) <*> optional (symbol "@" >> pattern)
 
 pString :: Parser Pattern
 pString = PString <$> string_'

@@ -18,7 +18,7 @@ data Expression = Function [(Pattern, Maybe Expression, [Expression])]
                 | Undef
     deriving (Eq, {- Read, -} Show)
 
-data Pattern = PVariable Text
+data Pattern = PVariable Text (Maybe Pattern)
              | PString Text
              | PNumber Number
              | PTuple [Pattern]

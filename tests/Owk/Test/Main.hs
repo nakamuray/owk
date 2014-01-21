@@ -17,6 +17,7 @@ import Owk.Util
 import Owk.Test.Util
 
 import qualified Data.Conduit.List as CL
+import qualified Data.HashMap.Strict as H
 import qualified Data.Text as T
 import qualified Data.Vector as V
 
@@ -179,9 +180,13 @@ case_readme_pattern = do
 
         { key1 => k } = { key1 => 12, key3 => 13 }
 
-        l = (0 = 1)
+        l@{ key => m } = { key => "value", key2 => "value!" }
+        put l # => { key => "value", key2 => "value!" }
+        put m # => value
 
-        put (k, l)
+        n = (0 = 1)
+
+        put (k, n)
 
         func = 0 -> { 0 } | 1 -> { 1 }
         put (func 1) # => 1
@@ -189,6 +194,8 @@ case_readme_pattern = do
     |]
     ret @?= [ Tuple [Number (I 1), Number (I 2), Number (I 3), Number (I 4), Number (I 5), Tuple [String "6", Number (I 7)], Number (I 8), Number (I 9)]
             , Tuple [Number (I 10), Number (I 11)]
+            , Dict $ H.fromList [("key", String "value"), ("key2", String "value!")]
+            , String "value"
             , Tuple [Number (I 12), Undef]
             , Number (I 1)
             , Undef
