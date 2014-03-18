@@ -6,17 +6,13 @@ module Owk.Type
     , OwkPipe
     , Object(..)
     , Function
-    , ControlFlow(..)
     , Scope(..)
     , Namespace
 
     , runOwk
     , runOwk'
 
-    , throw
-    , exit
     , exception
-    , next
 
     , dict
     , list
@@ -33,7 +29,6 @@ module Owk.Type
     , yield
     , await
 
-    , module Control.Monad.Error
     , module Control.Monad.Reader
     , module Control.Monad.Trans
     , module Data.Attoparsec.Number
@@ -43,11 +38,12 @@ import Data.Conduit
 
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TVar (TVar, newTVarIO, readTVar, writeTVar)
-import Control.Monad.Error (Error, ErrorT, MonadError, throwError, runErrorT)
+import Control.Monad.Cont (ContT(runContT), MonadCont)
 import Control.Monad.Reader (MonadReader, ReaderT(..), runReaderT)
 import Control.Monad.Trans (MonadIO, MonadTrans, lift, liftIO)
 import Data.Aeson (encode)
 import Data.Attoparsec.Number (Number(..))
+import Data.IORef (newIORef, writeIORef, readIORef)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import Data.Typeable (Typeable)
@@ -60,8 +56,8 @@ import qualified Data.Vector as V
 import Owk.Util
 
 
-newtype OwkT m a = OwkT (ErrorT ControlFlow (ReaderT Scope m) a)
-    deriving (MonadError ControlFlow, MonadReader Scope, MonadIO, Monad, Functor)
+newtype OwkT m a = OwkT (ContT () (ReaderT Scope m) a)
+    deriving (MonadCont, MonadReader Scope, MonadIO, Monad, Functor)
 
 instance MonadTrans OwkT where
     lift m = OwkT (lift $ lift m)
@@ -69,10 +65,6 @@ instance MonadTrans OwkT where
 type Owk a = OwkT OwkPipe a
 type OwkPipe = ConduitM Object Object IO
 
-data ControlFlow = Return Object | Exit Int | Exception Object | Next
-    deriving Show
-
-instance Error ControlFlow
 
 data Scope = Global Namespace | Local Scope Namespace
 type Namespace = TVar (H.HashMap Text Object)
@@ -236,22 +228,13 @@ runOwk o n = runOwk' o n >> return ()
 
 runOwk' :: Owk a -> Namespace -> OwkPipe a
 runOwk' (OwkT o) n = do
-    ret <- runReaderT (runErrorT o) (Global n)
-    case ret of
-        Left  e -> error $ show e
-        Right a -> return a
-
-throw :: Object -> Owk a
-throw = throwError . Return
-
-exit :: Int -> Owk a
-exit = throwError . Exit
+    -- FIXME: don't use IORef
+    ref <- liftIO $ newIORef undefined
+    runReaderT (runContT o (\a -> liftIO $ writeIORef ref a)) (Global n)
+    liftIO $ readIORef ref
 
 exception :: Object -> Owk a
-exception = throwError . Exception
-
-next :: Owk a
-next = throwError Next
+exception = error . show
 
 
 dict :: Object -> Object

@@ -4,10 +4,11 @@ module Owk.Builtin where
 
 import Control.Applicative ((<$>))
 import Control.Monad ((>=>))
-import Control.Monad.Error (catchError)
+import Control.Monad.Cont (callCC)
 import Data.Maybe (isJust)
 import Data.Monoid ((<>))
 import Data.Text.ICU (regex', find)
+import System.Exit (ExitCode(..), exitSuccess, exitWith)
 import System.FilePath ((</>), (<.>), dropFileName, joinPath)
 
 import qualified Data.HashMap.Strict as H
@@ -74,9 +75,7 @@ builtins =
 
     , ("put", builtin1M put)
     , ("get", builtin1M get)
-    , ("catch", builtin1M catch_)
-    , ("throw", builtin1M throw)
-    , ("next", builtin1M $ const next)
+    , ("callcc", builtin1M callcc)
     , ("exit", builtin1M exit_)
 
     , ("import", builtin1M import_')
@@ -231,16 +230,14 @@ get _ = do
         Just o  -> return o
         Nothing -> return Undef
 
-catch_ :: Function
-catch_ body = funcCall body unit `catchError` catch'
-  where
-    catch' (Return obj) = return obj
-    catch' e = throwError e
+callcc :: Function
+callcc body = callCC $ \cont -> funcCall body (Function cont)
 
 exit_ :: Function
-exit_ (Number (I i)) = exit $ fromInteger i
-exit_ (Number (D d)) = exit $ error "exit with Double: not implemented" d
-exit_ _ = exit 0
+exit_ (Tuple []) = liftIO exitSuccess
+exit_ (Number (I 0)) = liftIO exitSuccess
+exit_ (Number (I i)) = liftIO $ exitWith $ ExitFailure $ fromInteger i
+exit_ o = exception $ String $ "exit with unknown type: " <> showText o
 
 import_' :: Object -> Owk Object
 import_' (String t) = do
