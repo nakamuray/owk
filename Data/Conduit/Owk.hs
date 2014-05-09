@@ -9,11 +9,13 @@ module Data.Conduit.Owk
   --, owkFileFold
   , owk
   , owkMap
+  , owkFilter
   , owkFold
   ) where
 
 import Data.Conduit
 
+import Control.Monad (when)
 import Control.Monad.Cont (callCC)
 import Control.Monad.Reader (asks, local)
 import Data.Text (Text)
@@ -78,6 +80,19 @@ owkMap fname script =
                     runOwk (withNext $ funcCall end unit) n
                     return ()
                 Nothing  -> return ()
+
+owkFilter :: String -> Text -> Conduit Object IO Object
+owkFilter fname script =
+    case parseOwk fname script of
+        -- TODO: don't use error, use conduit's error system
+        Left e     -> error e
+        Right prog -> do
+            n <- liftIO $ Namespace.fromList globalNamespace
+            (main, s) <- runOwk'' fname prog n
+            -- and then, run `main`
+            awaitForever $ \obj -> do
+                ret <- runOwk' (withNext $ funcCall main obj) n
+                when (bool ret == Bool True) $ yield obj
 
 owkFold :: String -> Text -> Text -> Conduit Object IO Object
 owkFold fname script initscript =

@@ -41,6 +41,7 @@ run (Config _ scripts i o) = do
   where
     scriptToOwk (Eval (ScriptText script fname)) = owk fname <$> script
     scriptToOwk (Map (ScriptText script fname)) = owkMap fname <$> script
+    scriptToOwk (Filter (ScriptText script fname)) = owkFilter fname <$> script
     scriptToOwk (Fold (ScriptText script fname)
                       (ScriptText initscript fname')) = owkFold fname <$> script <*> initscript
     scriptToOwk (Dump (ScriptText script fname)) = do
@@ -77,6 +78,7 @@ usage = unlines
     , "         -d <owk expressions>   dump AST and exit"
     , "         -e <owk expressions>   eval mode"
     , "         -m <owk expressions>   map mode (default)"
+    , "         -g <owk expressions>   grep (filter) mode"
     , "         -r <owk expressions> [owk expressions]"
     , "                                reduce (fold) mode"
     , "         -mf <script file>      map mode (read from script file)"
@@ -98,6 +100,7 @@ pprint = putStrLn . ppShow
 data ScriptText = ScriptText (IO T.Text) FilePath
 data OwkScript = Eval ScriptText
           | Map ScriptText
+          | Filter ScriptText
           | Fold ScriptText ScriptText
           | Dump ScriptText
 
@@ -123,6 +126,7 @@ parseArgs' config ("-h":args) = parseArgs' config { showHelp = True } args
 parseArgs' config ("-d":script:args) = parseArgs' config { owkScripts = owkScripts config ++ [Dump $ stext script] } args
 parseArgs' config ("-e":script:args) = parseArgs' config { owkScripts = owkScripts config ++ [Eval $ stext script] } args
 parseArgs' config ("-m":script:args) = parseArgs' config { owkScripts = owkScripts config ++ [Map $ stext script] } args
+parseArgs' config ("-g":script:args) = parseArgs' config { owkScripts = owkScripts config ++ [Filter $ stext script] } args
 parseArgs' config ("-r":script:[]) = parseArgs' config { owkScripts = owkScripts config ++ [Fold (stext script) (stext "")] } []
 parseArgs' config ("-r":script:args@(('-':_):_)) = parseArgs' config { owkScripts = owkScripts config ++ [Fold (stext script) (stext "")] } args
 parseArgs' config ("-r":script:initscript:args) = parseArgs' config { owkScripts = owkScripts config ++ [Fold (stext script) (stext initscript)] } args
