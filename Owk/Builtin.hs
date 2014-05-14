@@ -45,6 +45,7 @@ builtins =
     , ("+", numop (+))
     , (":", builtin2M __app__)
     , ("/", numop (/))
+    , ("__get__", builtin1M __get__)
     , ("*", numop (*))
     , ("__num__", builtin1 num)
     , ("__neg__", builtin1M __neg__)
@@ -149,6 +150,18 @@ __and__ left _ = left
 __or__ :: Object -> Object -> Object
 __or__ left _ | isTrue left = left
 __or__ _ right = right
+
+
+__get__ :: Function
+__get__ (List v) = __get__' $ V.toList v
+__get__ _ = return Undef
+
+__get__' :: [Object] -> Owk Object
+__get__' (Undef:_) = return Undef
+__get__' (Dict h:String name:names@(String _:_)) = __get__' $ H.lookupDefault Undef name h : names
+__get__' (Dict h:String name:_) = return $ H.lookupDefault Undef name h
+__get__' (obj:_) = exception $ String $ "__get__: not a Dict: " <> showText obj
+__get__'  [] = error "should not be reached"
 
 __when__ :: Object -> Object -> Owk Object
 __when__ b block =

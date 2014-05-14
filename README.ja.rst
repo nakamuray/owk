@@ -43,13 +43,6 @@ String
   s = "hello, owk"
   put "\u3042" # => あ
 
-ドットに続けて英数字を書いても文字列となります。
-後述する Dict の値を取り出す際に使うとそれらしくなります。
-
-::
-
-  put .hello # => hello
-
 Number
 ~~~~~~
 
@@ -83,13 +76,7 @@ Dict
 ::
 
   d = { key => "value", key2 => 100 }
-
-値の取得は辞書に文字列を適用して行います。
-
-::
-
-  put (d "key") # => value
-  put (d.key) # => value
+  put d.key # => value
   put (d ["key"]) # => value
 
 辞書の更新 (merge) は以下のように行います。

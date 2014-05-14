@@ -6,7 +6,7 @@ import Data.Attoparsec.Number (Number(..))
 import Data.Char (isHexDigit)
 import Numeric (readHex)
 import Text.Parser.Expression
-import Text.Trifecta hiding (symbol, whiteSpace, parens, braces, comma, brackets, dot)
+import Text.Trifecta hiding (symbol, whiteSpace, parens, braces, comma, brackets)
 import Text.Trifecta.Delta (Delta(Directed))
 
 import Data.Word (Word8)
@@ -130,7 +130,13 @@ term = foldl1 FuncCall <$> many1 term'
      <?> "expression"
 
 term' :: Parser Expression
-term' = lexeme $ try function <|> try define <|> parensesEnclosed <|> list <|> dict <|> variable <|> string_ <|> dotString <|> number
+term' = lexeme $ do
+    e <- try function <|> try define <|> parensesEnclosed <|> list <|> dict <|> variable <|> string_ <|> number
+    sub <- option [] subscripts
+    whiteSpace
+    case sub of
+        [] -> return e
+        sub' -> return $ FuncCall (Variable "__get__") $ List $ e : (map String sub')
   <?> "expression"
 
 parensesEnclosed :: Parser Expression
@@ -190,9 +196,6 @@ string_ = String <$> string_'
 string_' :: Parser T.Text
 string_' = T.pack <$> p_string
     <?> "string"
-
-dotString :: Parser Expression
-dotString = String . T.pack <$> (dot *> many (char '_' <|> alphaNum))
 
 number :: Parser Expression
 number = Number <$> number'
@@ -269,6 +272,11 @@ varName = lexeme $ do
 
 varOp :: Parser T.Text
 varOp = lexeme $ between (symbol "`") (symbol "`") $ T.pack <$> many opLetter
+
+subscripts :: Parser [T.Text]
+subscripts = do
+    char '.'
+    (T.pack <$> many (char '_' <|> alphaNum) <|> (T.pack <$> p_string)) `sepBy1` char '.'
 
 tryAll :: [Parser a] -> Parser a
 tryAll ps = foldl1 (<|>) $ map try ps

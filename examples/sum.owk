@@ -6,5 +6,5 @@ end = {
 };
 
 main = {
-  result := result () + _.1;
+  result := result () + num _.1;
 };
