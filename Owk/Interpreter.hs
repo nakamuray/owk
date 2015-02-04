@@ -6,6 +6,7 @@ import Control.Applicative ((<$>))
 import Control.Monad (foldM, forM)
 import Control.Monad.Reader (MonadReader, ask, local)
 import Data.Monoid ((<>))
+import Data.Scientific (toBoundedInteger)
 import Data.Text (Text)
 
 import qualified Data.HashMap.Strict as H
@@ -79,15 +80,18 @@ expr AST.Undef = return Type.Undef
 funcCall :: Object -> Object -> Owk Object
 funcCall (Type.Function f) arg = f arg
 funcCall (Type.Ref r) _ = readRef r
-funcCall (Type.List v) (Type.Number (I i))
-    | fromInteger i < V.length v = return $ v V.! (fromInteger i)
+funcCall (Type.List v) (Type.Number s)
+    | Just i <- toBoundedInteger s,
+      i < V.length v = return $ v V.! i
     | otherwise = return Type.Undef
 funcCall (Type.List v) (Type.List args)
-    | [Type.Number (I i)] <- V.toList args = return $ v V.! (fromInteger i)
-    | [Type.Number (I i), Type.Number (I j)] <- V.toList args =
+    | [Type.Number s] <- V.toList args,
+      Just i <- toBoundedInteger s = return $ v V.! i
+    | [Type.Number s, Type.Number t] <- V.toList args,
+      (Just i, Just j) <- (toBoundedInteger s, toBoundedInteger t) =
         let len = V.length v
-            start = max 0 $ min len $ fromInteger i
-            count = min (len - start) $ fromInteger j
+            start = max 0 $ min len i
+            count = min (len - start) j
         in return $ Type.List $ V.slice start count v
 funcCall (Type.List _) _ = exception $ Type.String $ "list only accept 1 or 2 numbers"
 funcCall (Type.Dict h) (Type.Dict i) = return $ Type.Dict $ H.union i h

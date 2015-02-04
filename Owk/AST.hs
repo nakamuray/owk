@@ -1,6 +1,6 @@
 module Owk.AST where
 
-import Data.Attoparsec.Number (Number(..))
+import Data.Scientific (Scientific)
 import Data.Text (Text)
 
 data Program = Program [Expression]
@@ -11,7 +11,7 @@ data Expression = Function [(Pattern, Maybe Expression, [Expression])]
                 | FuncCall Expression Expression
                 | Variable Text
                 | String Text
-                | Number Number
+                | Number Scientific
                 | Tuple [Expression]
                 | List [Expression]
                 | Dict [(Text, Expression)]
@@ -20,7 +20,7 @@ data Expression = Function [(Pattern, Maybe Expression, [Expression])]
 
 data Pattern = PVariable Text (Maybe Pattern)
              | PString Text
-             | PNumber Number
+             | PNumber Scientific
              | PTuple [Pattern]
              | PList [Pattern]
              | PDict [(Text, Pattern)]

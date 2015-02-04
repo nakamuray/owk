@@ -41,11 +41,11 @@ case_add_1 = testOwk_ $ do
     ret <- __add__ (String "hello") (String " world")
     liftIO $ ret @?= (String "hello world")
 case_add_2 = testOwk_ $ do
-    ret <- __add__ (Number (I 10)) (Number (I 20))
-    liftIO $ ret @?= (Number (I 30))
+    ret <- __add__ (Number 10) (Number 20)
+    liftIO $ ret @?= Number 30
 case_add_3 = testOwk_ $ do
-    ret <- __add__ (List $ V.fromList $ map (Number . I) [1, 2, 3]) (List $ V.fromList $ map (Number . I) [4, 5, 6])
-    liftIO $ ret @?= (List $ V.fromList $ map (Number . I) [1, 2, 3, 4, 5, 6])
+    ret <- __add__ (List $ V.fromList $ map Number [1, 2, 3]) (List $ V.fromList $ map Number [4, 5, 6])
+    liftIO $ ret @?= (List $ V.fromList $ map Number [1, 2, 3, 4, 5, 6])
 
 case_expand_1 = testOwk_ $ do
     Namespace.define "x" (String "hello")
@@ -59,8 +59,8 @@ case_expand_2 = testOwk_ $ do
     liftIO $ ret @?= (String "hello world")
 
 case_expand_3 = testOwk_ $ do
-    Namespace.define "x" (Number (I 2))
-    Namespace.define "y" (Number (I 3))
+    Namespace.define "x" (Number 2)
+    Namespace.define "y" (Number 3)
     ret <- expand (String "hello #{x * y}")
     liftIO $ ret @?= (String "hello 6")
 
@@ -70,10 +70,10 @@ case_split_2 = split (String "!") (String "hello world") @=? List (V.fromList [S
 
 case_length_1 = testOwk_ $ do
     ret <- length_ (String "hello")
-    liftIO $ ret @=? Number (I 5)
+    liftIO $ ret @=? Number 5
 case_length_2 = testOwk_ $ do
     ret <- length_ (List $ V.fromList [Undef, Undef, Undef])
-    liftIO $ ret @=? Number (I 3)
+    liftIO $ ret @=? Number 3
 case_length_3 = testOwk_ $ do
-    ret <- length_ (Dict $ H.fromList [("key", String "value"), ("number", Number (I 5))])
-    liftIO $ ret @=? Number (I 2)
+    ret <- length_ (Dict $ H.fromList [("key", String "value"), ("number", Number 5)])
+    liftIO $ ret @=? Number 2

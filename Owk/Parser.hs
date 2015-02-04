@@ -2,9 +2,9 @@
 module Owk.Parser where
 
 import Control.Applicative hiding (many)
-import Data.Attoparsec.Number (Number(..))
 import Data.Char (isHexDigit)
 import Numeric (readHex)
+import Data.Scientific (Scientific)
 import Text.Parser.Expression
 import Text.Trifecta hiding (symbol, whiteSpace, parens, braces, comma, brackets)
 import Text.Trifecta.Delta (Delta(Directed))
@@ -200,15 +200,15 @@ string_' = T.pack <$> p_string
 number :: Parser Expression
 number = Number <$> number'
 
-number' :: Parser Number
+number' :: Parser Scientific
 number' = do
     d <- many1 digit
     mdot <- optional $ char '.'
     case mdot of
         Just _ -> do
             n <- many1 digit
-            return $ D $ read $ d ++ "." ++ n
-        Nothing -> return $ I $ read d
+            return $ read $ d ++ "." ++ n
+        Nothing -> return $ read d
   <?> "number"
 
 tuple :: Parser Expression

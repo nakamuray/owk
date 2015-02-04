@@ -29,9 +29,9 @@ module Owk.Type
     , yield
     , await
 
+    , Scientific
     , module Control.Monad.Reader
     , module Control.Monad.Trans
-    , module Data.Attoparsec.Number
     ) where
 
 import Data.Conduit
@@ -42,9 +42,9 @@ import Control.Monad.Cont (ContT(runContT), MonadCont)
 import Control.Monad.Reader (MonadReader, ReaderT(..), runReaderT)
 import Control.Monad.Trans (MonadIO, MonadTrans, lift, liftIO)
 import Data.Aeson (encode)
-import Data.Attoparsec.Number (Number(..))
 import Data.IORef (newIORef, writeIORef, readIORef)
 import Data.Monoid ((<>))
+import Data.Scientific (Scientific, floatingOrInteger)
 import Data.Text (Text)
 import Data.Typeable (Typeable)
 import Data.Vector (Vector)
@@ -73,7 +73,7 @@ data Object = Dict (H.HashMap Text Object)
             | List (Vector Object)
             | Tuple [Object]
             | String !Text
-            | Number !Number
+            | Number !Scientific
             | Bool !Bool
             | Function Function
             | Ref Ref
@@ -251,7 +251,11 @@ list _ = undefined
 
 str :: Object -> Object
 str o@(String _) = o
-str (Number n) = String $ showText n
+str (Number s) =
+    -- XXX: to avoid ambiguous type warning, declare type explicitly
+    case floatingOrInteger s :: Either Double Integer of
+        Right i -> String $ showText i
+        Left  f -> String $ showText f
 str (Bool True) = String "true"
 str (Bool False) = String "false"
 str Undef = String ""
@@ -262,7 +266,11 @@ str o = error $ "str: not implemented: " ++ show o
 
 str' :: Object -> Text
 str' (String t) = lb2text $ encode t
-str' (Number n) = showText n
+str' (Number s) =
+    -- XXX: to avoid ambiguous type warning, declare type explicitly
+    case floatingOrInteger s :: Either Double Integer of
+        Right i -> showText i
+        Left  f -> showText f
 str' (Bool True) = "true"
 str' (Bool False) = "false"
 str' Undef = ""
@@ -276,13 +284,13 @@ str' (Dict h) = "{" <> T.intercalate ", " (map toKV $ H.toList h) <> "}"
 str' (HaskellData a) = showText a
 
 num :: Object -> Object
-num (Dict h) = Number $ I $ toInteger $ H.size h
-num (List v) = Number $ I $ toInteger $ V.length v
+num (Dict h) = Number $ fromIntegral $ H.size h
+num (List v) = Number $ fromIntegral $ V.length v
 num o@(Number _) = o
-num (String t) = Number $ maybe (I 0) id $ parseNumber t
-num (Bool True) = Number $ I 1
-num (Bool False) = Number $ I 0
-num Undef = Number $ I 0
+num (String t) = Number $ maybe 0 id $ parseNumber t
+num (Bool True) = Number 1
+num (Bool False) = Number 0
+num Undef = Number 0
 num _ = error "num: not implemented"
 
 bool :: Object -> Object

@@ -35,15 +35,15 @@ case_list_1 = testOwk_ $ do
     liftIO $ l @?= Type.List (V.fromList [Type.String ""])
 
 case_list_2 = testOwk_ $ do
-    x <- funcCall (Type.List $ V.fromList [Type.String "x", Type.String "y", Type.String "z"]) (Type.Number $ I 0)
+    x <- funcCall (Type.List $ V.fromList [Type.String "x", Type.String "y", Type.String "z"]) (Type.Number 0)
     liftIO $ x @?= Type.String "x"
-    y <- funcCall (Type.List $ V.fromList [Type.String "x", Type.String "y", Type.String "z"]) (Type.Number $ I 1)
+    y <- funcCall (Type.List $ V.fromList [Type.String "x", Type.String "y", Type.String "z"]) (Type.Number 1)
     liftIO $ y @?= Type.String "y"
-    u <- funcCall (Type.List $ V.fromList [Type.String "x", Type.String "y", Type.String "z"]) (Type.Number $ I 10)
+    u <- funcCall (Type.List $ V.fromList [Type.String "x", Type.String "y", Type.String "z"]) (Type.Number 10)
     liftIO $ u @?= Type.Undef
 
 case_list_3 = testOwk_ $ do
-    x <- funcCall (Type.List $ V.fromList [Type.String "x", Type.String "y", Type.String "z"]) (Type.List (V.fromList [Type.Number $ I 0]))
+    x <- funcCall (Type.List $ V.fromList [Type.String "x", Type.String "y", Type.String "z"]) (Type.List (V.fromList [Type.Number 0]))
     liftIO $ x @?= Type.String "x"
 
 case_dict_0 = testOwk_ $ do
@@ -119,17 +119,17 @@ case_define_7 = testOwk_ $ do
 
 case_define_8 = testOwk_ $ do
     ret <- expr $ Define (PDict [("user", PDict [("name", PVariable "n" Nothing)])])
-                         (AST.Dict [("user", AST.Dict [("name", AST.String "nakamuray"), ("value", AST.Number (I 100))]), ("text", AST.String "hello world")])
+                         (AST.Dict [("user", AST.Dict [("name", AST.String "nakamuray"), ("value", AST.Number 100)]), ("text", AST.String "hello world")])
     n <- Namespace.lookup "n"
-    liftIO $ ret @?= (Type.Dict $ H.fromList [("user", Type.Dict $ H.fromList [("name", Type.String "nakamuray"), ("value", Type.Number (I 100))]), ("text", Type.String "hello world")])
+    liftIO $ ret @?= (Type.Dict $ H.fromList [("user", Type.Dict $ H.fromList [("name", Type.String "nakamuray"), ("value", Type.Number 100)]), ("text", Type.String "hello world")])
     liftIO $ n @?= Type.String "nakamuray"
 
 case_define_9 = testOwk_ $ do
-    ret1 <- expr $ Define (PVariable "x" (Just (PNumber (I 1)))) (AST.Number (I 1))
-    ret2 <- expr $ Define (PVariable "y" (Just (PNumber (I 1)))) (AST.Number (I 2))
+    ret1 <- expr $ Define (PVariable "x" (Just (PNumber 1))) (AST.Number 1)
+    ret2 <- expr $ Define (PVariable "y" (Just (PNumber 1))) (AST.Number 2)
     x <- Namespace.lookup "x"
     y <- Namespace.lookup "y"
-    liftIO $ ret1 @?= Type.Number (I 1)
+    liftIO $ ret1 @?= Type.Number 1
     liftIO $ ret2 @?= Type.Undef
-    liftIO $ x @?= Type.Number (I 1)
+    liftIO $ x @?= Type.Number 1
     liftIO $ y @?= Type.Undef

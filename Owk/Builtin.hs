@@ -7,6 +7,7 @@ import Control.Monad ((>=>))
 import Control.Monad.Cont (callCC)
 import Data.Maybe (isJust)
 import Data.Monoid ((<>))
+import Data.Scientific (floatingOrInteger)
 import Data.Text.ICU (regex', find)
 import System.Exit (ExitCode(..), exitSuccess, exitWith)
 import System.FilePath ((</>), (<.>), dropFileName, joinPath)
@@ -107,9 +108,9 @@ split sep s
 split _ _ = error "should not be entered"
 
 length_ :: Object -> Owk Object
-length_ (String s) = return $ Number . I $ fromIntegral $ T.length s
-length_ (List v) = return $ Number . I $ fromIntegral $ V.length v
-length_ (Dict h) = return $ Number . I $ fromIntegral $ length $ H.toList h
+length_ (String s) = return $ Number  $ fromIntegral $ T.length s
+length_ (List v) = return $ Number $ fromIntegral $ V.length v
+length_ (Dict h) = return $ Number $ fromIntegral $ length $ H.toList h
 length_ obj = exception $ String $ showText obj <> " don't have length"
 
 
@@ -133,10 +134,13 @@ __neg__ :: Object -> Owk Object
 __neg__ (Number n) = return $ Number $ -n
 __neg__ obj = exception $ String $ "not a number: " <> showText obj
 
-__mod__ :: Number -> Number -> Number
-__mod__ (I x) (I y) = I $ x `mod` y
-__mod__ (D x) y = __mod__ (I $ floor x) y
-__mod__ x (D y) = __mod__ x (I $ floor y)
+__mod__ :: Scientific -> Scientific -> Scientific
+__mod__ x y = __mod__' (floatingOrInteger x) (floatingOrInteger y)
+
+__mod__' :: Either Double Integer -> Either Double Integer -> Scientific
+__mod__' (Right i) (Right j) = fromInteger $ i `mod` j
+__mod__' (Left f) y' = __mod__' (Right $ floor f) y'
+__mod__' x' (Left f) = __mod__' x' (Right $ floor f)
 
 __not__ :: Object -> Object
 __not__ obj =
@@ -248,8 +252,9 @@ callcc body = callCC $ \cont -> funcCall body (Function cont)
 
 exit_ :: Function
 exit_ (Tuple []) = liftIO exitSuccess
-exit_ (Number (I 0)) = liftIO exitSuccess
-exit_ (Number (I i)) = liftIO $ exitWith $ ExitFailure $ fromInteger i
+exit_ (Number s)
+    | s == 0    = liftIO exitSuccess
+    | otherwise = liftIO $ exitWith $ ExitFailure $ floor s
 exit_ o = exception $ String $ "exit with unknown type: " <> showText o
 
 import_' :: Object -> Owk Object
@@ -262,7 +267,7 @@ import_' o = exception $ String $ "import: expect string but " <> showText o
 
 
 -- helper functions
-numop :: (Number -> Number -> Number) -> Object
+numop :: (Scientific -> Scientific -> Scientific) -> Object
 numop op = builtin2M numop'
   where
     numop' :: Object -> Object -> Owk Object

@@ -23,8 +23,8 @@ case_bool_1 = bool (Bool True) @=? Bool True
 case_bool_2 = bool (Bool False) @=? Bool False
 case_bool_3 = bool (String "") @=? Bool True
 case_bool_4 = bool (String "hi") @=? Bool True
-case_bool_5 = bool (Number $ I 0) @=? Bool True
-case_bool_6 = bool (Number $ I 1) @=? Bool True
+case_bool_5 = bool (Number 0) @=? Bool True
+case_bool_6 = bool (Number 1) @=? Bool True
 case_bool_7 = bool (Dict H.empty) @=? Bool True
 case_bool_8 = bool (List V.empty) @=? Bool True
 case_bool_9 = bool Undef @=? Bool False
@@ -37,6 +37,6 @@ case_list_2 =
   in L.sort (V.toList v) @=? [String "key1", String "key2", String "key3"]
 case_list_3 = list (String "xyz") @=? List (V.fromList [String "x", String "y", String "z"])
 
-_types = [Ref undefined, unit, String "", List V.empty, Dict H.empty, Number (I 0), Bool True, Undef]
+_types = [Ref undefined, unit, String "", List V.empty, Dict H.empty, Number 0, Bool True, Undef]
 case_eq_0 = assertBool "each type should no equal" $ and [x /= y | (x, y) <- zip _types $ tail _types]
 case_ord_0 = assertBool "type ordering" $ and [x > y | (x, y) <- zip _types $ tail _types]

@@ -25,8 +25,8 @@ tests = $(testGroupGenerator)
 
 
 case_sum = do
-    ret <- testOwkStringMap script_sum $ map (Number . I ) [1..10]
-    ret @?= [Number (I 55)]
+    ret <- testOwkStringMap script_sum $ map (Number . fromInteger) [1..10]
+    ret @?= [Number 55]
   where
     script_sum = [s|
         sum = ref 0
@@ -39,16 +39,16 @@ case_sum = do
         |]
 
 case_sum_fold = do
-    ret <- testOwkStringFold script_sum "0" $ map (Number . I ) [1..10]
-    ret @?= [Number (I 55)]
+    ret <- testOwkStringFold script_sum "0" $ map (Number . fromInteger) [1..10]
+    ret @?= [Number 55]
   where
     script_sum = [s|
         acc -> _ -> acc + _
         |]
 
 case_tail = do
-    ret <- testOwkStringMap script_tail $ map (Number . I ) [1..10]
-    ret @?= map (Number . I) [2..10]
+    ret <- testOwkStringMap script_tail $ map (Number . fromInteger) [1..10]
+    ret @?= map (Number . fromInteger) [2..10]
   where
     script_tail = [s|
         # read and ignore first object
@@ -61,7 +61,7 @@ case_curry = do
         f = x -> y -> put : x * y
         f 2 3
     |]
-    ret @?= [Number (I 6)]
+    ret @?= [Number 6]
 
 case_readme_string = do
     ret <- flip testOwkString [] [s|
@@ -76,7 +76,7 @@ case_readme_number = do
         j = 10.1
         put (i * j)
     |]
-    ret @?= [Number (D 20.2)]
+    ret @?= [Number 20.2]
 
 case_readme_bool = do
     ret <- flip testOwkString [] [s|
@@ -95,7 +95,7 @@ case_readme_dict = do
         d3 = d2 ["key4", "egg"]
         put(d2.key2, d3.key4)
     |]
-    ret @?= [String "value", String "value", Tuple [Number (I 200), String "egg"]]
+    ret @?= [String "value", String "value", Tuple [Number 200, String "egg"]]
 
 case_readme_list = do
     ret <- flip testOwkString [] [s|
@@ -104,14 +104,14 @@ case_readme_list = do
         L2 = L[1, 2]
         put L2 # => [2, 3]
     |]
-    ret @?= [Number (I 1), List (V.fromList [Number (I 2), Number (I 3)])]
+    ret @?= [Number 1, List (V.fromList [Number 2, Number 3])]
 
 case_readme_tuple = do
     ret <- flip testOwkString [] [s|
         t = (1, 2)
         put (t, undef)
     |]
-    ret @?= [Tuple [Tuple [Number (I 1), Number (I 2)], Undef]]
+    ret @?= [Tuple [Tuple [Number 1, Number 2], Undef]]
 
 case_readme_function = do
     ret <- flip testOwkString [] [s|
@@ -147,12 +147,12 @@ case_readme_function = do
     ret @?= [ String "hi"
             , String "hi"
             , Tuple [String "hi,", String "nakamuray"]
-            , Number (I 6)
-            , Number (I 6)
-            , Number (I 20)
-            , Number (I 20)
+            , Number 6
+            , Number 6
+            , Number 20
+            , Number 20
             , String "zero"
-            , Number (I 100)
+            , Number 100
             , String "less than equal five"
             , String "greater than five"
             ]
@@ -164,7 +164,7 @@ case_readme_ref = do
         r := 1
         put (r ()) # => 1
     |]
-    ret @?= [Number (I 0), Number (I 1)]
+    ret @?= [Number 0, Number 1]
 
 case_readme_pattern = do
     ret <- flip testOwkString [] [s|
@@ -190,12 +190,12 @@ case_readme_pattern = do
         put (func 1) # => 1
         put (func 2) # =>
     |]
-    ret @?= [ Tuple [Number (I 1), Number (I 2), Number (I 3), Number (I 4), Number (I 5), Tuple [String "6", Number (I 7)], Number (I 8), Number (I 9)]
-            , Tuple [Number (I 10), Number (I 11)]
+    ret @?= [ Tuple [Number 1, Number 2, Number 3, Number 4, Number 5, Tuple [String "6", Number 7], Number 8, Number 9]
+            , Tuple [Number 10, Number 11]
             , Dict $ H.fromList [("key", String "value"), ("key2", String "value!")]
             , String "value"
-            , Tuple [Number (I 12), Undef]
-            , Number (I 1)
+            , Tuple [Number 12, Undef]
+            , Number 1
             , Undef
             ]
 
@@ -204,7 +204,7 @@ case_readme_operator_app = do
         put : 1 + 1 # => 2
         put (1 + 1) # => 2
     |]
-    ret @?= [Number (I 2), Number (I 2)]
+    ret @?= [Number 2, Number 2]
 
 case_readme_operator_if = do
     ret <- flip testOwkString [] [s|
@@ -220,7 +220,7 @@ case_readme_operator_variable = do
         `+:` = x -> y -> put (x, "plus", y)
         1 +: 2  # => 1 plus 2
     |]
-    ret @?= [Number (I 3), Tuple [Number (I 1), String "plus", Number (I 2)]]
+    ret @?= [Number 3, Tuple [Number 1, String "plus", Number 2]]
 
 
 testOwkString :: T.Text -> [Object] -> IO [Object]

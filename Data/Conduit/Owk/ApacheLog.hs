@@ -64,7 +64,7 @@ apacheLog = do
     b2s = String . decodeUtf8
     b2s' b | b == "-" = Undef
            | otherwise = b2s b
-    n = Number . I
+    n = Number . fromInteger
     n' (Just i) = n i
     n' Nothing = Undef
 
