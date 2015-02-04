@@ -41,6 +41,8 @@ apacheLog = do
     referer <- quoted
     space
     ua <- quoted
+    -- ignore unknown fields
+    takeTill (== '\n')
     char '\n'
 
     return $ Dict $ H.fromList
