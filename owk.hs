@@ -87,10 +87,10 @@ usage = unlines
     , "         -o TYPE                set output TYPE"
     , "         -io TYPE               set both input/output"
     , ""
-    , "TYPE: line (default)"
+    , "TYPE: line"
     , "      ltsv"
     , "      json"
-    , "      jsonpp (output only)"
+    , "      jsonpp (output only) [default]"
     , "      apachelog (input only)"
     ]
 
@@ -115,7 +115,7 @@ data Config = Config
   }
 
 defaultConfig :: Config
-defaultConfig = Config False [] Line.toObject Line.fromObjects
+defaultConfig = Config False [] JSON.toObject JSON.fromObjectsPretty
 
 parseArgs :: [String] -> Config
 parseArgs args = parseArgs' defaultConfig args
