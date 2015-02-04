@@ -4,7 +4,7 @@ module Owk.Interpreter where
 
 import Control.Applicative ((<$>))
 import Control.Monad (foldM, forM)
-import Control.Monad.Reader (MonadReader, ask, local)
+import Control.Monad.Reader (ask, local)
 import Data.Monoid ((<>))
 import Data.Scientific (toBoundedInteger)
 import Data.Text (Text)

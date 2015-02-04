@@ -43,7 +43,7 @@ run (Config _ scripts i o) = do
     scriptToOwk (Map (ScriptText script fname)) = owkMap fname <$> script
     scriptToOwk (Filter (ScriptText script fname)) = owkFilter fname <$> script
     scriptToOwk (Fold (ScriptText script fname)
-                      (ScriptText initscript fname')) = owkFold fname <$> script <*> initscript
+                      (ScriptText initscript _)) = owkFold fname <$> script <*> initscript
     scriptToOwk (Dump (ScriptText script fname)) = do
         ret <- parseOwk fname <$> script
         case ret of

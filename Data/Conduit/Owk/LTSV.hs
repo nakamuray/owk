@@ -11,7 +11,7 @@ module Data.Conduit.Owk.LTSV
 
 import Control.Applicative
 import Data.Conduit
-import Data.Attoparsec.Char8 as A
+import Data.Attoparsec.ByteString.Char8 as A
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import Data.Text.Encoding (decodeUtf8)

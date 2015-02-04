@@ -88,7 +88,7 @@ owkFilter fname script =
         Left e     -> error e
         Right prog -> do
             n <- liftIO $ Namespace.fromList globalNamespace
-            (main, s) <- runOwk'' fname prog n
+            (main, _) <- runOwk'' fname prog n
             -- and then, run `main`
             awaitForever $ \obj -> do
                 ret <- runOwk' (withNext $ funcCall main obj) n

@@ -3,7 +3,7 @@ module Data.Conduit.Owk.ApacheLog ( toObject ) where
 
 import Control.Applicative
 import Data.Conduit
-import Data.Attoparsec.Char8 as A
+import Data.Attoparsec.ByteString.Char8 as A
 
 import Data.Monoid (mconcat)
 import Data.Text.Encoding (decodeUtf8)

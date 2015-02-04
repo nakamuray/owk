@@ -36,6 +36,7 @@ module Owk.Type
 
 import Data.Conduit
 
+import Control.Applicative (Applicative)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TVar (TVar, newTVarIO, readTVar, writeTVar)
 import Control.Monad.Cont (ContT(runContT), MonadCont)
@@ -57,7 +58,7 @@ import Owk.Util
 
 
 newtype OwkT m a = OwkT (ContT () (ReaderT Scope m) a)
-    deriving (MonadCont, MonadReader Scope, MonadIO, Monad, Functor)
+    deriving (MonadCont, MonadReader Scope, MonadIO, Monad, Applicative, Functor)
 
 instance MonadTrans OwkT where
     lift m = OwkT (lift $ lift m)
@@ -229,9 +230,9 @@ runOwk o n = runOwk' o n >> return ()
 runOwk' :: Owk a -> Namespace -> OwkPipe a
 runOwk' (OwkT o) n = do
     -- FIXME: don't use IORef
-    ref <- liftIO $ newIORef undefined
-    runReaderT (runContT o (\a -> liftIO $ writeIORef ref a)) (Global n)
-    liftIO $ readIORef ref
+    r <- liftIO $ newIORef undefined
+    runReaderT (runContT o (\a -> liftIO $ writeIORef r a)) (Global n)
+    liftIO $ readIORef r
 
 exception :: Object -> Owk a
 exception = error . show
