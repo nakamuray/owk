@@ -30,7 +30,7 @@ executable owk
                      , old-locale
                      , parsers
                      , pretty-show
-                     , scientific
+                     , scientific >= 0.3
                      , stm
                      , text
                      , text-icu
@@ -61,7 +61,7 @@ test-suite test-owk
                      , old-locale
                      , parsers
                      , pretty-show
-                     , scientific
+                     , scientific >= 0.3
                      , stm
                      , text
                      , text-icu
