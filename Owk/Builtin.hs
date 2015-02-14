@@ -43,7 +43,7 @@ builtins =
     , ("length", builtin1M length_)
 
       -- operators
-    , ("+", numop (+))
+    , ("+", builtin2M __add__)
     , (":", builtin2M __app__)
     , ("/", numop (/))
     , ("__get__", builtin1M __get__)
@@ -59,7 +59,7 @@ builtins =
     , ("==", cmpop (==))
     , ("/=", cmpop (/=))
     , ("!", builtin1 __not__)
-    , ("$$", builtin2 __and__)
+    , ("&&", builtin2 __and__)
     , ("||", builtin2 __or__)
     , ("?", builtin2M __when__)
     , (":=", builtin2M __wref__)
