@@ -29,6 +29,11 @@ module Owk.Type
     , yield
     , await
 
+    , askScope
+    , localScope
+    , getLocation
+    , setLocation
+
     , Scientific
     , module Control.Monad.Reader
     , module Control.Monad.Trans
@@ -36,14 +41,14 @@ module Owk.Type
 
 import Data.Conduit
 
-import Control.Applicative (Applicative)
+import Control.Applicative ((<$>), Applicative)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TVar (TVar, newTVarIO, readTVar, writeTVar)
 import Control.Monad.Cont (ContT(runContT), MonadCont)
-import Control.Monad.Reader (MonadReader, ReaderT(..), runReaderT)
+import Control.Monad.Reader (MonadReader, ReaderT(..), runReaderT, ask, local)
 import Control.Monad.Trans (MonadIO, MonadTrans, lift, liftIO)
 import Data.Aeson (encode)
-import Data.IORef (newIORef, writeIORef, readIORef)
+import Data.IORef (IORef, newIORef, writeIORef, readIORef)
 import Data.Monoid ((<>))
 import Data.Scientific (Scientific, floatingOrInteger)
 import Data.Text (Text)
@@ -54,11 +59,12 @@ import qualified Data.HashMap.Strict as H
 import qualified Data.Text as T
 import qualified Data.Vector as V
 
+import Owk.AST (Location)
 import Owk.Util
 
 
-newtype OwkT m a = OwkT (ContT () (ReaderT Scope m) a)
-    deriving (MonadCont, MonadReader Scope, MonadIO, Monad, Applicative, Functor)
+newtype OwkT m a = OwkT (ContT () (ReaderT OwkState m) a)
+    deriving (MonadCont, MonadReader OwkState, MonadIO, Monad, Applicative, Functor)
 
 instance MonadTrans OwkT where
     lift m = OwkT (lift $ lift m)
@@ -67,6 +73,7 @@ type Owk a = OwkT OwkPipe a
 type OwkPipe = ConduitM Object Object IO
 
 
+type OwkState = (Scope, IORef Location)
 data Scope = Global Namespace | Local Scope Namespace
 type Namespace = TVar (H.HashMap Text Object)
 
@@ -231,11 +238,15 @@ runOwk' :: Owk a -> Namespace -> OwkPipe a
 runOwk' (OwkT o) n = do
     -- FIXME: don't use IORef
     r <- liftIO $ newIORef undefined
-    runReaderT (runContT o (\a -> liftIO $ writeIORef r a)) (Global n)
+    rloc <- liftIO $ newIORef undefined
+    runReaderT (runContT o (\a -> liftIO $ writeIORef r a)) (Global n, rloc)
     liftIO $ readIORef r
 
 exception :: Object -> Owk a
-exception = error . show
+exception o = do
+    (d, l) <- getLocation
+    let msg = show o
+    error $ prettyError d l msg
 
 
 dict :: Object -> Object
@@ -311,3 +322,19 @@ readRef t = liftIO $ atomically $ readTVar t
 
 writeRef :: Ref -> Object -> Owk ()
 writeRef t obj = liftIO $ atomically $ writeTVar t obj
+
+askScope :: Owk Scope
+askScope = fst <$> ask
+
+localScope :: Scope -> Owk a -> Owk a
+localScope s o = local (\(_, loc) -> (s, loc)) o
+
+getLocation :: Owk Location
+getLocation = do
+    (_, r) <- ask
+    liftIO $ readIORef r
+
+setLocation :: Location -> Owk ()
+setLocation loc = do
+    (_, r) <- ask
+    liftIO $ writeIORef r loc

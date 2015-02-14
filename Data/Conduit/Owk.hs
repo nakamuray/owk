@@ -15,9 +15,9 @@ module Data.Conduit.Owk
 
 import Data.Conduit
 
+import Control.Applicative ((<$>))
 import Control.Monad (when)
 import Control.Monad.Cont (callCC)
-import Control.Monad.Reader (asks, local)
 import Data.Text (Text)
 
 import qualified Data.HashMap.Strict as H
@@ -120,9 +120,9 @@ owkFold fname script initscript =
 -- run program and return last expression as a main function
 runOwk'' :: String -> AST.Program -> Namespace.Namespace -> OwkPipe (Object, Scope)
 runOwk'' fname prog n = flip runOwk' n $ do
-    g <- asks Namespace.extractGlobal
+    g <- Namespace.extractGlobal <$> askScope
     s <- liftIO $ Namespace.create g
-    main <- local (const s) $ do
+    main <- localScope s $ do
         Namespace.define "__file__" $ String (T.pack fname)
         interpret prog
     return (main, s)
@@ -130,7 +130,7 @@ runOwk'' fname prog n = flip runOwk' n $ do
 -- Owk with "next" function
 withNext :: Owk Object -> Owk Object
 withNext o = callCC $ \cont -> do
-    g <- asks $ Namespace.currentNamepace . Namespace.extractGlobal
+    g <- Namespace.currentNamepace . Namespace.extractGlobal <$> askScope
     liftIO $ Namespace.insertIO "next" (Function cont) g
     o
 

@@ -4,7 +4,6 @@ module Owk.Interpreter where
 
 import Control.Applicative ((<$>))
 import Control.Monad (foldM, forM)
-import Control.Monad.Reader (ask, local)
 import Data.Monoid ((<>))
 import Data.Scientific (toBoundedInteger)
 import Data.Text (Text)
@@ -27,7 +26,7 @@ interpret_ (Program es) = mapM_ expr es
 
 expr :: Expression -> Owk Object
 expr (AST.Function pbs) = do
-    s <- ask
+    s <- askScope
     return $ Type.Function $ func s (exprBodies pbs)
   where
     func _ [] _ = return $ Type.Undef
@@ -40,13 +39,13 @@ expr (AST.Function pbs) = do
                 case mguard of
                     Nothing    -> func' scope body
                     Just guard -> do
-                        gsuccess <- bool <$> (local (const scope) guard)
+                        gsuccess <- bool <$> localScope scope guard
                         case gsuccess of
                             Type.Bool True -> func' scope body
                             _              -> func s pbs' v
     func' _ [] = return Type.Undef
-    func' scope [o] = local (const scope) o
-    func' scope body = local (const scope) $ foldM (const id) Type.Undef body
+    func' scope [o] = localScope scope o
+    func' scope body = localScope scope $ foldM (const id) Type.Undef body
     exprBodies [] = []
     exprBodies ((p, mguard, body) : pbs'') = (p, expr <$> mguard, map expr body) : exprBodies pbs''
 expr (Define p e) = do
@@ -56,12 +55,13 @@ expr (Define p e) = do
         Just ms -> do
             mapM_ (uncurry define) ms
             return v
-expr (FuncCall efunc earg) =
+expr (FuncCall loc efunc earg) =
     let ofunc = expr efunc
         oarg = expr earg
     in do
         func <- ofunc
         arg <- oarg
+        setLocation loc
         funcCall func arg
 expr (Variable name) = Namespace.lookup name
 expr (AST.String s) = return $ Type.String s

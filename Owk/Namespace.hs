@@ -14,9 +14,9 @@ module Owk.Namespace
   ) where
 
 import Prelude hiding (lookup)
+import Control.Applicative ((<$>))
 import Control.Concurrent.STM (STM, atomically)
 import Control.Concurrent.STM.TVar (newTVarIO, readTVar, readTVarIO, writeTVar)
-import Control.Monad.Reader (ask, asks)
 import Data.Maybe (isJust)
 import Data.Monoid ((<>))
 import Data.Text (Text)
@@ -41,7 +41,7 @@ create parent = do
 
 define :: Text -> Object -> Owk Object
 define n v = do
-    ns <- asks currentNamepace
+    ns <- currentNamepace <$> askScope
     ret <- liftIO $ atomically $ do
         h <- readTVar ns
         if isJust $ H.lookup n h
@@ -67,7 +67,7 @@ extractGlobal (Local p _) = extractGlobal p
 
 lookup :: Text -> Owk Object
 lookup n = do
-    s <- ask
+    s <- askScope
     mo <- liftIO $ atomically $ lookup' n s
     case mo of
         Just o  -> return o

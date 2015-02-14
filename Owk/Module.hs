@@ -4,7 +4,7 @@ module Owk.Module
     , importProgram
     ) where
 
-import Control.Monad.Reader (asks, local)
+import Control.Applicative ((<$>))
 
 import qualified Data.Text as T
 
@@ -23,9 +23,9 @@ import_ fpath = do
 
 importProgram :: FilePath -> Program -> Owk Object
 importProgram fpath prog = do
-    g <- asks Namespace.extractGlobal
+    g <- Namespace.extractGlobal <$> askScope
     s <- liftIO $ Namespace.create g
-    local (const s) $ do
+    localScope s $ do
         Namespace.define "__file__" $ String (T.pack fpath)
         interpret_ prog
     h <- liftIO $ Namespace.toHash (Namespace.currentNamepace s)

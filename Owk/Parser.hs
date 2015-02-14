@@ -94,16 +94,25 @@ table = [ [unary "-" "__neg__", unary "+" "__num__"]
         ]
 
 unary :: String -> T.Text -> Operator Parser Expression
-unary  name fun       = Prefix (do{ reservedOp name; return $ \x -> FuncCall (Variable fun) x } <?> "operator")
+unary name fun = Prefix $ do
+    loc <- getLocation
+    reservedOp name
+    return $ \x -> FuncCall loc (Variable fun) x
+  <?> "operator"
 
 binary :: String -> Assoc -> Operator Parser Expression
-binary name assoc = Infix (do{ reservedOp2 name; return $ \x y -> FuncCall (FuncCall (Variable $ T.pack name) x) y } <?> "binary operator") assoc
+binary name assoc = Infix (do
+    loc <- getLocation
+    reservedOp2 name
+    return $ \x y -> FuncCall loc (FuncCall loc (Variable $ T.pack name) x) y
+  <?> "binary operator") assoc
 
 binary' :: String -> Assoc -> Operator Parser Expression
-binary' prefix assoc = Infix (do {
-    name <- userDefinedOp2 prefix;
-    return $ \x y -> FuncCall (FuncCall (Variable name) x) y } <?> "binary operator"
-  ) assoc
+binary' prefix assoc = Infix (do
+    loc <- getLocation
+    name <- userDefinedOp2 prefix
+    return $ \x y -> FuncCall loc (FuncCall loc (Variable name) x) y
+  <?> "binary operator") assoc
 
 reservedOp :: String -> Parser ()
 reservedOp name = try $ lexeme $ reservedOp' name
@@ -126,17 +135,23 @@ userDefinedOp2 prefix = try $ lexeme' $ do
     return $ T.pack $ prefix ++ cs
 
 term :: Parser Expression
-term = foldl1 FuncCall <$> many1 term'
+term = go <$> many1 term'
      <?> "expression"
+  where
+    go (e:es) = go' e es
+    go [] = error "many1 ensures there is at least one element"
+    go' (loc, acc) ((loc', e): es) = go' (loc', FuncCall loc acc e) es
+    go' (_, acc) [] = acc
 
-term' :: Parser Expression
+term' :: Parser (Location, Expression)
 term' = lexeme $ do
     e <- try function <|> try define <|> parensesEnclosed <|> list <|> dict <|> variable <|> string_ <|> number
     sub <- option [] subscripts
+    loc <- getLocation
     whiteSpace
     case sub of
-        [] -> return e
-        sub' -> return $ FuncCall (Variable "__get__") $ List $ e : (map String sub')
+        [] -> return (loc, e)
+        sub' -> return $ (loc, FuncCall loc (Variable "__get__") $ List $ e : (map String sub'))
   <?> "expression"
 
 parensesEnclosed :: Parser Expression
@@ -320,3 +335,10 @@ many1 p = do
     r <- p
     rs <- many p
     return $ r : rs
+
+
+getLocation :: Parser Location
+getLocation = do
+    d <- position
+    l <- line
+    return (d, l)
