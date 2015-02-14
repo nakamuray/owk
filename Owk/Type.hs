@@ -242,10 +242,9 @@ runOwk' (OwkT o) n = do
     runReaderT (runContT o (\a -> liftIO $ writeIORef r a)) (Global n, rloc)
     liftIO $ readIORef r
 
-exception :: Object -> Owk a
-exception o = do
+exception :: String -> Owk a
+exception msg = do
     (d, l) <- getLocation
-    let msg = show o
     error $ prettyError d l msg
 
 

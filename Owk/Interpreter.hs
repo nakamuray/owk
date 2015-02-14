@@ -12,7 +12,6 @@ import qualified Data.HashMap.Strict as H
 import qualified Data.Vector as V
 
 import Owk.Namespace as Namespace
-import Owk.Util
 
 import Owk.AST as AST
 import Owk.Type as Type
@@ -93,7 +92,7 @@ funcCall (Type.List v) (Type.List args)
             start = max 0 $ min len i
             count = min (len - start) j
         in return $ Type.List $ V.slice start count v
-funcCall (Type.List _) _ = exception $ Type.String $ "list only accept 1 or 2 numbers"
+funcCall (Type.List _) _ = exception "list only accept 1 or 2 numbers"
 funcCall (Type.Dict h) (Type.Dict i) = return $ Type.Dict $ H.union i h
 funcCall (Type.Dict h) (Type.List v)
     | V.length v == 1 =
@@ -105,8 +104,8 @@ funcCall (Type.Dict h) (Type.List v)
             Type.String key' = str key
         in return $ Type.Dict $ H.insert key' val h
 funcCall (Type.Dict h) (Type.String k) = return $ H.lookupDefault Type.Undef k h
-funcCall (Type.Dict _) o = exception $ Type.String $ "dict accept other dict or string, but :" <> showText o
-funcCall obj _ = exception $ Type.String $ "not a callable: " <> showText obj
+funcCall (Type.Dict _) o = exception $ "dict accept other dict or string, but :" <> show o
+funcCall obj _ = exception $ "not a callable: " <> show obj
 
 match :: Pattern -> Object -> Maybe [(Text, Object)]
 match (PVariable v Nothing) o = Just [(v, o)]

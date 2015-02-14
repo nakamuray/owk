@@ -51,7 +51,7 @@ define n v = do
             return $ Just v
     case ret of
         Just v'  -> return v'
-        Nothing -> exception $ Type.String $ "name `" <> n <> "` is already defined"
+        Nothing -> exception $ "name `" <> show n <> "` is already defined"
 
 currentNamepace :: Scope -> Namespace
 currentNamepace (Global n) = n

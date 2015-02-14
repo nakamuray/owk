@@ -18,7 +18,7 @@ import_ :: FilePath -> Owk Object
 import_ fpath = do
     ret <- liftIO $ parseOwkFile fpath
     case ret of
-        Left e  -> exception $ String $ T.pack e
+        Left e  -> exception e
         Right prog -> importProgram fpath prog
 
 importProgram :: FilePath -> Program -> Owk Object

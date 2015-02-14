@@ -12,14 +12,13 @@ import Owk.AST (Expression)
 import Owk.Interpreter (expr)
 import Owk.Parser (expression)
 import Owk.Type
-import Owk.Util
 
 -- foo = "world"
 -- expand "hello ${foo}" # => "hello world"
 expand :: Object -> Owk Object
 expand (String f) =
     case expandPrep f of
-        Failure e  -> exception $ String $ showText e
+        Failure e  -> exception $ show e
         Success es -> String <$> foldM go "" es
   where
     go buf (Right c) = return $ buf `snoc` c
@@ -28,7 +27,7 @@ expand (String f) =
     str'' (String t) = t
     str'' o = str' o
 
-expand obj = exception $ String $ "expand: not a String: " <> showText obj
+expand obj = exception $ "expand: not a String: " <> show obj
 
 expandPrep :: Text -> Result [Either Expression Char]
 expandPrep = parseString p_expand mempty . unpack

@@ -27,7 +27,7 @@ format :: Object -> Object -> Owk Object
 format (String f) (HaskellData a)
     | Just u <- cast a = return $ String $ T.pack $ formatTime defaultTimeLocale (T.unpack f) (u :: UTCTime)
 format s n@(Number _) = format s =<< fromPosix n
-format _ _ = exception $ String "time.format: type mismatch"
+format _ _ = exception "time.format: type mismatch"
 
 formatLocal :: Object -> Object -> Owk Object
 formatLocal (String f) (HaskellData a)
@@ -35,15 +35,15 @@ formatLocal (String f) (HaskellData a)
         z <- liftIO $ utcToLocalZonedTime u
         return $ String $ T.pack $ formatTime defaultTimeLocale (T.unpack f) z
 formatLocal s n@(Number _) = formatLocal s =<< fromPosix n
-formatLocal _ _ = exception $ String "time.formatLocal: type mismatch"
+formatLocal _ _ = exception "time.formatLocal: type mismatch"
 
 parse :: Object -> Object -> Owk Object
 parse (String f) (String t) =
     case parseTime defaultTimeLocale (T.unpack f) (T.unpack t) of
         Just u  -> return $ HaskellData (u :: UTCTime)
         Nothing -> return $ Undef
-parse _ _ = exception $ String "time.parse: type mismatch"
+parse _ _ = exception "time.parse: type mismatch"
 
 fromPosix :: Object -> Owk Object
 fromPosix (Number s) = return $ HaskellData $ posixSecondsToUTCTime $ realToFrac s
-fromPosix _ = exception $ String "time.fromPosix: type mismatch"
+fromPosix _ = exception "time.fromPosix: type mismatch"

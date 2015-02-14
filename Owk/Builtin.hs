@@ -21,7 +21,6 @@ import Owk.Builtin.Expand (expand)
 import Owk.Interpreter
 import Owk.Module
 import Owk.Type
-import Owk.Util
 import qualified Owk.Namespace as Namespace
 
 builtins :: [(T.Text, Object)]
@@ -94,7 +93,7 @@ sort (List v) = do
     return $ List v'
 sort d@(Dict _) = sort (list d)
 sort Undef = sort (list Undef)
-sort obj = exception $ String $ "sort: not a List: " <> showText obj
+sort obj = exception $ "sort: not a List: " <> show obj
 
 putex :: Object -> Owk Object
 putex = expand >=> put
@@ -111,7 +110,7 @@ length_ :: Object -> Owk Object
 length_ (String s) = return $ Number  $ fromIntegral $ T.length s
 length_ (List v) = return $ Number $ fromIntegral $ V.length v
 length_ (Dict h) = return $ Number $ fromIntegral $ length $ H.toList h
-length_ obj = exception $ String $ showText obj <> " don't have length"
+length_ obj = exception $ show obj <> " don't have length"
 
 
 -- operators
@@ -125,14 +124,14 @@ __add__ Undef r@(String _) = __add__ (str Undef) r
 __add__ (List l) (List r) = return $ List $ l <> r
 __add__ l@(List _) Undef = __add__ l (list Undef)
 __add__ Undef r@(List _) = __add__ (list Undef) r
-__add__ l r = exception $ String $ "__add__: type mismatch: " <> showText l <> " and " <> showText r
+__add__ l r = exception $ "__add__: type mismatch: " <> show l <> " and " <> show r
 
 __app__ :: Object -> Object -> Owk Object
 __app__ obj arg = funcCall obj arg
 
 __neg__ :: Object -> Owk Object
 __neg__ (Number n) = return $ Number $ -n
-__neg__ obj = exception $ String $ "not a number: " <> showText obj
+__neg__ obj = exception $ "not a number: " <> show obj
 
 __mod__ :: Scientific -> Scientific -> Scientific
 __mod__ x y = __mod__' (floatingOrInteger x) (floatingOrInteger y)
@@ -164,7 +163,7 @@ __get__' :: [Object] -> Owk Object
 __get__' (Undef:_) = return Undef
 __get__' (Dict h:String name:names@(String _:_)) = __get__' $ H.lookupDefault Undef name h : names
 __get__' (Dict h:String name:_) = return $ H.lookupDefault Undef name h
-__get__' (obj:_) = exception $ String $ "__get__: not a Dict: " <> showText obj
+__get__' (obj:_) = exception $ "__get__: not a Dict: " <> show obj
 __get__'  [] = error "should not be reached"
 
 __when__ :: Object -> Object -> Owk Object
@@ -176,16 +175,16 @@ __when__ b block =
 
 __wref__ :: Object -> Object -> Owk Object
 __wref__ (Ref r) obj = writeRef r obj >> return obj
-__wref__ obj _ = exception $ String $ "__wref__: not a Ref: " <> showText obj
+__wref__ obj _ = exception $ "__wref__: not a Ref: " <> show obj
 
 __match__ :: Object -> Object -> Owk Object
 __match__ (String t) (String pat) =
     case regex' [] pat of
-        Left e  -> exception $ String $ "__match__: parse error: " <> showText e
+        Left e  -> exception $ "__match__: parse error: " <> show e
         Right r -> return $ Bool $ isJust $ find r t
 __match__ Undef pat = __match__ (str Undef) pat
-__match__ (String _) obj = exception $ String $ "__match__: not a String: " <> showText obj
-__match__ obj _ = exception $ String $ "__match__: not a String: " <> showText obj
+__match__ (String _) obj = exception $ "__match__: not a String: " <> show obj
+__match__ obj _ = exception $ "__match__: not a String: " <> show obj
 
 __nmatch__ :: Object -> Object -> Owk Object
 __nmatch__ t pat = do
@@ -220,7 +219,7 @@ for :: Function
 for (List v) = return . Function $ \block -> V.foldM (\_ obj -> funcCall block obj) Undef v
 for d@(Dict _) = for (list d)
 for Undef = for (list Undef)
-for _ = exception $ String "for: not implemented"
+for _ = exception "for: not implemented"
 
 map_ :: Object -> Object -> Owk Object
 map_ f (List v) = List <$> V.mapM (funcCall f) v
@@ -255,7 +254,7 @@ exit_ (Tuple []) = liftIO exitSuccess
 exit_ (Number s)
     | s == 0    = liftIO exitSuccess
     | otherwise = liftIO $ exitWith $ ExitFailure $ floor s
-exit_ o = exception $ String $ "exit with unknown type: " <> showText o
+exit_ o = exception $ "exit with unknown type: " <> show o
 
 import_' :: Object -> Owk Object
 import_' (String t) = do
@@ -263,7 +262,7 @@ import_' (String t) = do
     let myDirname = dropFileName $ T.unpack myFname
         fname = myDirname </> joinPath (map T.unpack $ T.split (=='.') t) <.> ".owk"
     import_ fname
-import_' o = exception $ String $ "import: expect string but " <> showText o
+import_' o = exception $ "import: expect string but " <> show o
 
 
 -- helper functions
@@ -274,8 +273,8 @@ numop op = builtin2M numop'
     numop' (Number l) (Number r) = return $ Number $ l `op` r
     numop' n@(Number _) Undef = numop' n (num Undef)
     numop' Undef n@(Number _) = numop' (num Undef) n
-    numop' obj (Number _) = exception $ String $ "not a number: " <> showText obj
-    numop' _ (obj) = exception $ String $ "not a number: " <> showText obj
+    numop' obj (Number _) = exception $ "not a number: " <> show obj
+    numop' _ (obj) = exception $ "not a number: " <> show obj
 
 cmpop :: (Object -> Object -> Bool) -> Object
 cmpop op = builtin2 $ \left right -> Bool $ op left right
