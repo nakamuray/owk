@@ -44,7 +44,7 @@ builtins =
 
       -- operators
     , ("+", builtin2M __add__)
-    , (":", builtin2M __app__)
+    , ("$", builtin2M __app__)
     , ("/", numop (/))
     , ("__get__", builtin1M __get__)
     , ("*", numop (*))

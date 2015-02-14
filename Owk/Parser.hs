@@ -89,7 +89,7 @@ table = [ [unary "-" "__neg__", unary "+" "__num__"]
           , binary "=~" AssocNone, binary "!~" AssocNone]
         , [unary "!" "!"]
         , [binary "&&" AssocNone, binary "||" AssocNone]
-        , [binary' ":" AssocRight, binary' "?" AssocLeft]
+        , [binary' "$" AssocRight, binary' "?" AssocLeft]
         , [binary ":=" AssocNone]
         ]
 
@@ -117,7 +117,7 @@ reservedOp' name = do
     notFollowedBy opLetter <?> ("end of " ++ show name)
 
 opLetter :: Parser Char
-opLetter = oneOf "!%&*+-/:<=>?|~"
+opLetter = oneOf "!%&*+-/:$<=>?|~"
 
 userDefinedOp2 :: String -> Parser T.Text
 userDefinedOp2 prefix = try $ lexeme' $ do
@@ -232,7 +232,7 @@ makeDictParser p = (braces $ kv `sepEndBy` lexeme' comma)
         whiteSpace'
         k <- varName
         whiteSpace'
-        symbol "=>"
+        symbol ":"
         whiteSpace'
         v <- p
         whiteSpace'
@@ -266,8 +266,8 @@ pDict = PDict <$> makeDictParser pattern
 
 varName :: Parser T.Text
 varName = lexeme $ do
-    h <- oneOf $ "$_" ++ ['a'..'z'] ++ ['A'..'Z']
-    t <- many $ oneOf "$_" <|> alphaNum
+    h <- oneOf $ "_" ++ ['a'..'z'] ++ ['A'..'Z']
+    t <- many $ oneOf "_" <|> alphaNum
     return $ T.pack $ h : t
 
 varOp :: Parser T.Text

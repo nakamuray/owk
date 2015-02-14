@@ -31,7 +31,7 @@ case_sum = do
     script_sum = [s|
         sum = ref 0
         end = {
-          put : sum ()
+          put $ sum ()
         }
         {
           sum := sum () + _
@@ -58,7 +58,7 @@ case_tail = do
 
 case_curry = do
     ret <- flip testOwkString [] $ [s|
-        f = x -> y -> put : x * y
+        f = x -> y -> put $ x * y
         f 2 3
     |]
     ret @?= [Number 6]
@@ -88,10 +88,10 @@ case_readme_bool = do
 
 case_readme_dict = do
     ret <- flip testOwkString [] [s|
-        d = { key => "value", key2 => 100 }
+        d = { key : "value", key2 : 100 }
         put d.key # => value
         put (d ["key"]) # => value
-        d2 = d { key2 => 200, key3 => "spam" }
+        d2 = d { key2 : 200, key3 : "spam" }
         d3 = d2 ["key4", "egg"]
         put(d2.key2, d3.key4)
     |]
@@ -171,15 +171,15 @@ case_readme_pattern = do
         (a, b) = (1, 2)
         [c, [d, e]] = [3, [4, 5]]
         f = (("6", 7) = ("6", 7))
-        { key1 => g, key2 => h } = { key1 => 8, key2 => 9 }
+        { key1 : g, key2 : h } = { key1 : 8, key2 : 9 }
         put (a, b, c, d, e, f, g, h)
 
         ((i, j) -> { put (i, j) }) (10, 11)
 
-        { key1 => k } = { key1 => 12, key3 => 13 }
+        { key1 : k } = { key1 : 12, key3 : 13 }
 
-        l@{ key => m } = { key => "value", key2 => "value!" }
-        put l # => { key => "value", key2 => "value!" }
+        l@{ key : m } = { key : "value", key2 : "value!" }
+        put l # => { key : "value", key2 : "value!" }
         put m # => value
 
         n = (0 = 1)
@@ -201,7 +201,7 @@ case_readme_pattern = do
 
 case_readme_operator_app = do
     ret <- flip testOwkString [] [s|
-        put : 1 + 1 # => 2
+        put $ 1 + 1 # => 2
         put (1 + 1) # => 2
     |]
     ret @?= [Number 2, Number 2]
@@ -215,7 +215,7 @@ case_readme_operator_if = do
 
 case_readme_operator_variable = do
     ret <- flip testOwkString [] [s|
-        put : `+` 1 2  # => 3
+        put $ `+` 1 2  # => 3
 
         `+:` = x -> y -> put (x, "plus", y)
         1 +: 2  # => 1 plus 2

@@ -2,7 +2,7 @@
 result = ref 0;
 
 end = {
-  put : result ();
+  put $ result ();
 };
 
 main = {

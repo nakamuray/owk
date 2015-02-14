@@ -1,25 +1,25 @@
-if true: then {
+if true $ then {
   put "ok"
-}: else {
+} $ else {
   put "ng"
 }
 
-if false: then {
+if false $ then {
   put "ok"
-}: else {
+} $ else {
   put "ng"
 }
 
 
-case 0:
+case 0 $
     0 -> { put "zero" }
   | n -> { put n }
 
-case 10:
+case 10 $
     0 -> { put "zero" }
   | n -> { put n }
 
 
-for [1, 2, 3]: i -> {
+for [1, 2, 3] $ i -> {
   put i
 }
