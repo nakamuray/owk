@@ -127,6 +127,7 @@ instance Ord Object where
     String o1 `compare` String o2 = o1 `compare` o2
     List o1 `compare` List o2 = o1 `compare` o2
     Function _ `compare` Function _ = error "not implemented: how to compare function?"
+    Stream _ `compare` Stream _ = error "not implemented: how to compare streams?"
     Dict _ `compare` Dict _ = error "not implemented: how to compare dicts?"
     Number o1 `compare` Number o2 = o1 `compare` o2
     Bool o1 `compare` Bool o2 = o1 `compare` o2
@@ -137,6 +138,7 @@ instance Ord Object where
     HaskellData _ `compare` String _ = GT
     HaskellData _ `compare` List _ = GT
     HaskellData _ `compare` Function _ = GT
+    HaskellData _ `compare` Stream _ = GT
     HaskellData _ `compare` Dict _ = GT
     HaskellData _ `compare` Number _ = GT
     HaskellData _ `compare` Bool _ = GT
@@ -147,6 +149,7 @@ instance Ord Object where
     Ref _ `compare` String _ = GT
     Ref _ `compare` List _ = GT
     Ref _ `compare` Function _ = GT
+    Ref _ `compare` Stream _ = GT
     Ref _ `compare` Dict _ = GT
     Ref _ `compare` Number _ = GT
     Ref _ `compare` Bool _ = GT
@@ -157,6 +160,7 @@ instance Ord Object where
     Tuple _ `compare` String _ = GT
     Tuple _ `compare` List _ = GT
     Tuple _ `compare` Function _ = GT
+    Tuple _ `compare` Stream _ = GT
     Tuple _ `compare` Dict _ = GT
     Tuple _ `compare` Number _ = GT
     Tuple _ `compare` Bool _ = GT
@@ -167,6 +171,7 @@ instance Ord Object where
     String _ `compare` Tuple _ = LT
     String _ `compare` List _ = GT
     String _ `compare` Function _ = GT
+    String _ `compare` Stream _ = GT
     String _ `compare` Dict _ = GT
     String _ `compare` Number _ = GT
     String _ `compare` Bool _ = GT
@@ -177,6 +182,7 @@ instance Ord Object where
     List _ `compare` Tuple _ = LT
     List _ `compare` String _ = LT
     List _ `compare` Function _ = GT
+    List _ `compare` Stream _ = GT
     List _ `compare` Dict _ = GT
     List _ `compare` Number _ = GT
     List _ `compare` Bool _ = GT
@@ -187,16 +193,29 @@ instance Ord Object where
     Function _ `compare` Tuple _ = LT
     Function _ `compare` String _ = LT
     Function _ `compare` List _ = LT
+    Function _ `compare` Stream _ = GT
     Function _ `compare` Dict _ = GT
     Function _ `compare` Number _ = GT
     Function _ `compare` Bool _ = GT
     Function _ `compare` Undef = GT
+
+    Stream _ `compare` HaskellData _ = LT
+    Stream _ `compare` Ref _ = LT
+    Stream _ `compare` Tuple _ = LT
+    Stream _ `compare` String _ = LT
+    Stream _ `compare` List _ = LT
+    Stream _ `compare` Function _ = LT
+    Stream _ `compare` Dict _ = GT
+    Stream _ `compare` Number _ = GT
+    Stream _ `compare` Bool _ = GT
+    Stream _ `compare` Undef = GT
 
     Dict _ `compare` HaskellData _ = LT
     Dict _ `compare` Ref _ = LT
     Dict _ `compare` Tuple _ = LT
     Dict _ `compare` String _ = LT
     Dict _ `compare` Function _ = LT
+    Dict _ `compare` Stream _ = LT
     Dict _ `compare` List _ = LT
     Dict _ `compare` Number _ = GT
     Dict _ `compare` Bool _ = GT
@@ -207,6 +226,7 @@ instance Ord Object where
     Number _ `compare` Tuple _ = LT
     Number _ `compare` String _ = LT
     Number _ `compare` Function _ = LT
+    Number _ `compare` Stream _ = LT
     Number _ `compare` List _ = LT
     Number _ `compare` Dict _ = LT
     Number _ `compare` Bool _ = GT
@@ -217,6 +237,7 @@ instance Ord Object where
     Bool _ `compare` Tuple _ = LT
     Bool _ `compare` String _ = LT
     Bool _ `compare` Function _ = LT
+    Bool _ `compare` Stream _ = LT
     Bool _ `compare` List _ = LT
     Bool _ `compare` Dict _ = LT
     Bool _ `compare` Number _ = LT
@@ -227,6 +248,7 @@ instance Ord Object where
     Undef `compare` Tuple _ = LT
     Undef `compare` String _ = LT
     Undef `compare` Function _ = LT
+    Undef `compare` Stream _ = LT
     Undef `compare` List _ = LT
     Undef `compare` Dict _ = LT
     Undef `compare` Number _ = LT
@@ -288,6 +310,7 @@ str' (Bool False) = "false"
 str' Undef = ""
 str' (Ref _) = "ref"
 str' (Function _) = "function"
+str' (Stream _) = "function"
 str' (Tuple os) = "(" <> T.intercalate ", " (map str' os) <> ")"
 str' (List v) = "[" <> T.intercalate ", " (map str' $ V.toList v) <> "]"
 str' (Dict h) = "{" <> T.intercalate ", " (map toKV $ H.toList h) <> "}"

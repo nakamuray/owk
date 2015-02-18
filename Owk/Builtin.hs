@@ -4,7 +4,7 @@ module Owk.Builtin where
 
 import Data.Conduit
 import Control.Applicative ((<$>))
-import Control.Monad ((>=>), when)
+import Control.Monad (when)
 import Control.Monad.Cont (callCC)
 import Data.Maybe (isJust)
 import Data.Monoid ((<>))
@@ -251,6 +251,7 @@ fold_ f i (Stream s) = return $ Stream $ s =$ go i
             Just obj -> do
                 acc' <- lift $ funcCall f acc >>= \f' -> funcCall f' obj
                 go acc'
+fold_ f i o = fold_ f i $ list o
 
 reduce_ :: Object -> Object -> Owk Object
 reduce_ (Tuple [f, i]) o = fold_ f i o

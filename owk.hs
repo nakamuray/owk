@@ -3,7 +3,7 @@ module Main where
 
 import Data.Conduit
 
-import Control.Applicative ((<$>), (<*>))
+import Control.Applicative ((<$>))
 import System.Environment (getArgs)
 import System.IO (BufferMode(LineBuffering), hSetBuffering, stdin, stdout)
 import Text.Show.Pretty (ppShow)
@@ -27,9 +27,8 @@ main = do
     run config
 
 run :: Config -> IO ()
-run (Config Help _ _ _) = putStrLn usage
-run (Config mode script i o) = do
-    owk' <- scriptToOwk mode script
+run (Config mode scriptText i o) = do
+    owk' <- scriptToOwk mode scriptText
     hSetBuffering stdout LineBuffering
     let source = CB.sourceHandle stdin $= i
         sink = o =$ CB.sinkHandle stdout
@@ -42,6 +41,9 @@ run (Config mode script i o) = do
         case ret of
             Right prog -> pprint prog
             Left  e    -> putStrLn e
+        return $ const $ return ()
+    scriptToOwk Help _ = do
+        putStrLn usage
         return $ const $ return ()
 
 

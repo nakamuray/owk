@@ -63,6 +63,7 @@ instance ToJSON O.Object where
     toJSON (O.Number n) = A.Number n
     toJSON (O.Bool b) = A.Bool b
     toJSON (O.Function _) = A.String "<Function>"
+    toJSON (O.Stream _) = A.String "<Stream>"
     toJSON (O.Ref _) = A.String "<Ref>"
     toJSON O.Undef = A.Null
     toJSON (O.HaskellData a) = A.String (showText a)

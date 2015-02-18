@@ -9,18 +9,14 @@ module Data.Conduit.Owk
 import Data.Conduit
 
 import Control.Applicative ((<$>))
-import Control.Monad (when)
-import Control.Monad.Cont (callCC)
 import Data.Text (Text)
 
-import qualified Data.HashMap.Strict as H
 import qualified Data.Text as T
 import qualified Data.Text.IO as TI
 
 import qualified Owk.AST as AST
 import Owk.Builtin (builtins)
 import Owk.Interpreter
-import Owk.Module
 import Owk.Module.Time (time)
 import Owk.Parser (parseOwk)
 import Owk.Type
@@ -47,7 +43,7 @@ owk fname script src =
             let src' = transPipe liftIO src
             o <- liftIO $ runOwk' (funcCall main (Stream src')) n
             case o of
-                Stream s -> transPipe (\o -> runOwk' o n) s
+                Stream s -> transPipe (\o' -> runOwk' o' n) s
                 _        -> yield o
 
 owkEval :: String -> Text -> Source IO Object -> Source IO Object
