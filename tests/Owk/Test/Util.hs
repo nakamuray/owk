@@ -17,6 +17,6 @@ s = QuasiQuoter { quoteExp = stringE }
 
 testOwk owk = do
     n <- Namespace.fromList builtins
-    CL.sourceNull $= runOwk owk n $$ CL.consume
+    runOwk owk n
 
 testOwk_ owk = testOwk owk >> return ()
