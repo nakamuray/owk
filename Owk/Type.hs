@@ -19,6 +19,7 @@ module Owk.Type
     , str'
     , num
     , bool
+    , bool'
     , unit
 
     , ref
@@ -308,6 +309,11 @@ bool :: Object -> Object
 bool o@(Bool _) = o
 bool Undef = Bool False
 bool _ = Bool True
+
+bool' :: Object -> Bool
+bool' (Bool b) = b
+bool' Undef    = False
+bool' _        = True
 
 unit :: Object
 unit = Tuple []

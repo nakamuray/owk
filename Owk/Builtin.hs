@@ -4,7 +4,7 @@ module Owk.Builtin where
 
 import Data.Conduit
 import Control.Applicative ((<$>))
-import Control.Monad ((>=>))
+import Control.Monad ((>=>), when)
 import Control.Monad.Cont (callCC)
 import Data.Maybe (isJust)
 import Data.Monoid ((<>))
@@ -77,6 +77,13 @@ builtins =
     -- stream functions
     , (">>", builtin2 __comp__)
     , ("map", builtin2M map_)
+    , ("m", builtin2M map_)
+    , ("filter", builtin2M filter_)
+    , ("f", builtin2M filter_)
+    , ("fold", builtin3M fold_)
+    , ("reduce", builtin2M reduce_)
+    , ("r", builtin2M reduce_)
+    , ("consume", builtin1M consume_)
 
     , ("callcc", builtin1M callcc)
     , ("exit", builtin1M exit_)
@@ -225,6 +232,36 @@ map_ f (Stream s) = return $ Stream (s $= CL.mapM (funcCall f))
 map_ f (List v) = List <$> V.mapM (funcCall f) v
 map_ f o = map_ f $ list o
 
+filter_ :: Object -> Object -> Owk Object
+filter_ f (List v) = List <$> V.filterM (\o -> bool' <$> funcCall f o) v
+filter_ f (Stream s) =
+    return $ Stream $ s =$ awaitForever (\o -> do
+        ret <- lift $ funcCall f o
+        when (bool' ret) $ yield o)
+filter_ f o = filter_ f $ list o
+
+fold_ :: Object -> Object -> Object -> Owk Object
+fold_ f i (List v) = V.foldM' (\a -> \b -> funcCall f a >>= \f' -> funcCall f' b) i v
+fold_ f i (Stream s) = return $ Stream $ s =$ go i
+  where
+    go acc = do
+        mobj <- await
+        case mobj of
+            Nothing  -> yield acc
+            Just obj -> do
+                acc' <- lift $ funcCall f acc >>= \f' -> funcCall f' obj
+                go acc'
+
+reduce_ :: Object -> Object -> Owk Object
+reduce_ (Tuple [f, i]) o = fold_ f i o
+reduce_ f o = fold_ f Undef o
+
+consume_ :: Function
+consume_ (Stream s) = do
+    l <- s $$ CL.consume
+    return $ List $ V.fromList l
+consume_ o = return $ list o
+
 __comp__ :: Object -> Object -> Object
 __comp__ f g = Function $ \o -> funcCall f o >>= funcCall g
 
@@ -287,3 +324,6 @@ builtin2 f = Function (\x -> return $ Function (\y -> return $ f x y))
 
 builtin2M :: (Object -> Object -> Owk Object) -> Object
 builtin2M f = Function (\x -> return $ Function (\y -> f x y))
+
+builtin3M :: (Object -> Object -> Object -> Owk Object) -> Object
+builtin3M f = Function (\x -> return $ Function (\y ->  return $ Function (\z -> f x y z)))
