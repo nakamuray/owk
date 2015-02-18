@@ -24,32 +24,25 @@ import Owk.Parser
 main :: IO ()
 main = do
     config <- parseArgs <$> getArgs
-    case config of
-        Config { showHelp = True } -> putStrLn usage
-        _ -> run config
+    run config
 
 run :: Config -> IO ()
-run config@(Config _ [] _ _) = run config { owkScripts = [defaultScript] }
-run (Config _ scripts i o) = do
-    owks <- mapM scriptToOwk scripts
+run (Config Help _ _ _) = putStrLn usage
+run (Config mode script i o) = do
+    owk' <- scriptToOwk mode script
     hSetBuffering stdout LineBuffering
     let source = CB.sourceHandle stdin $= i
         sink = o =$ CB.sinkHandle stdout
-
-        owk' = foldl1 (=$=) owks
-    source $= owk' $$ sink
+    owk' source $$ sink
   where
-    scriptToOwk (Eval (ScriptText script fname)) = owk fname <$> script
-    scriptToOwk (Map (ScriptText script fname)) = owkMap fname <$> script
-    scriptToOwk (Filter (ScriptText script fname)) = owkFilter fname <$> script
-    scriptToOwk (Fold (ScriptText script fname)
-                      (ScriptText initscript _)) = owkFold fname <$> script <*> initscript
-    scriptToOwk (Dump (ScriptText script fname)) = do
+    scriptToOwk Eval (ScriptText script fname) = owkEval fname <$> script
+    scriptToOwk Map (ScriptText script fname) = owk fname <$> script
+    scriptToOwk Dump (ScriptText script fname) = do
         ret <- parseOwk fname <$> script
         case ret of
             Right prog -> pprint prog
             Left  e    -> putStrLn e
-        return $ return ()
+        return $ const $ return ()
 
 
 inputs :: [(String, OwkInput)]
@@ -78,11 +71,7 @@ usage = unlines
     , "         -d <owk expressions>   dump AST and exit"
     , "         -e <owk expressions>   eval mode"
     , "         -m <owk expressions>   map mode (default)"
-    , "         -g <owk expressions>   grep (filter) mode"
-    , "         -r <owk expressions> [owk expressions]"
-    , "                                reduce (fold) mode"
-    , "         -mf <script file>      map mode (read from script file)"
-    , "         -rf <script file>      reduce mode (read from script file)"
+    , "         -f <script file>       eval mode (read from script file)"
     , "         -i TYPE                set input TYPE"
     , "         -o TYPE                set output TYPE"
     , "         -io TYPE               set both input/output"
@@ -98,41 +87,31 @@ pprint :: Show a => a -> IO ()
 pprint = putStrLn . ppShow
 
 data ScriptText = ScriptText (IO T.Text) FilePath
-data OwkScript = Eval ScriptText
-          | Map ScriptText
-          | Filter ScriptText
-          | Fold ScriptText ScriptText
-          | Dump ScriptText
+data Mode = Help | Eval | Map | Dump
 
-defaultScript :: OwkScript
-defaultScript = Eval $ ScriptText TI.getContents "<stdin>"
+defaultScript :: ScriptText
+defaultScript = ScriptText TI.getContents "<stdin>"
 
 data Config = Config
-  { showHelp :: Bool
-  , owkScripts :: [OwkScript]
+  { owkMode :: Mode
+  , owkScript :: ScriptText
   , owkInput :: OwkInput
   , owkOutput :: OwkOutput
   }
 
 defaultConfig :: Config
-defaultConfig = Config False [] JSON.toObject JSON.fromObjectsPretty
+defaultConfig = Config Map defaultScript JSON.toObject JSON.fromObjectsPretty
 
 parseArgs :: [String] -> Config
 parseArgs args = parseArgs' defaultConfig args
 
 parseArgs' :: Config -> [String] -> Config
 parseArgs' config [] = config
-parseArgs' config ("-h":args) = parseArgs' config { showHelp = True } args
-parseArgs' config ("-d":script:args) = parseArgs' config { owkScripts = owkScripts config ++ [Dump $ stext script] } args
-parseArgs' config ("-e":script:args) = parseArgs' config { owkScripts = owkScripts config ++ [Eval $ stext script] } args
-parseArgs' config ("-m":script:args) = parseArgs' config { owkScripts = owkScripts config ++ [Map $ stext script] } args
-parseArgs' config ("-g":script:args) = parseArgs' config { owkScripts = owkScripts config ++ [Filter $ stext script] } args
-parseArgs' config ("-r":script:[]) = parseArgs' config { owkScripts = owkScripts config ++ [Fold (stext script) (stext "")] } []
-parseArgs' config ("-r":script:args@(('-':_):_)) = parseArgs' config { owkScripts = owkScripts config ++ [Fold (stext script) (stext "")] } args
-parseArgs' config ("-r":script:initscript:args) = parseArgs' config { owkScripts = owkScripts config ++ [Fold (stext script) (stext initscript)] } args
-parseArgs' config ("-f":fname:args) = parseArgs' config { owkScripts = owkScripts config ++ [Eval $ ScriptText (TI.readFile fname) fname] } args
-parseArgs' config ("-mf":fname:args) = parseArgs' config { owkScripts = owkScripts config ++ [Map $ ScriptText (TI.readFile fname) fname] } args
-parseArgs' config ("-rf":fname:args) = parseArgs' config { owkScripts = owkScripts config ++ [Fold (ScriptText (TI.readFile fname) fname) (stext "")] } args
+parseArgs' config ("-h":args) = parseArgs' config { owkMode = Help } args
+parseArgs' config ("-d":args) = parseArgs' config { owkMode = Dump } args
+parseArgs' config ("-e":args) = parseArgs' config { owkMode = Eval } args
+parseArgs' config ("-m":args) = parseArgs' config { owkMode = Map } args
+parseArgs' config ("-f":fname:args) = parseArgs' config { owkMode = Eval, owkScript = ScriptText (TI.readFile fname) fname } args
 parseArgs' config ("-i":pname:args) =
     case lookup pname inputs of
         Just input -> parseArgs' config { owkInput = input } args
@@ -142,7 +121,7 @@ parseArgs' config ("-o":pname:args) =
         Just output -> parseArgs' config { owkOutput = output } args
         Nothing   -> error $ "unknown TYPE name: " ++ pname
 parseArgs' config ("-io":pname:args) = parseArgs' config $ "-i":pname:"-o":pname:args
-parseArgs' config (script:args) = parseArgs' config { owkScripts = owkScripts config ++ [Map $ stext script] } args
+parseArgs' config (script:args) = parseArgs' config { owkScript = stext script } args
 
 stext :: String -> ScriptText
 stext s = ScriptText (return $ T.pack s) "<string>"

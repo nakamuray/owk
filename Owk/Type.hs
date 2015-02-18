@@ -3,7 +3,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Owk.Type
     ( Owk
-    , OwkPipe
     , Object(..)
     , Function
     , Scope(..)
@@ -69,8 +68,7 @@ newtype OwkT m a = OwkT (ContT () (ReaderT OwkState m) a)
 instance MonadTrans OwkT where
     lift m = OwkT (lift $ lift m)
 
-type Owk a = OwkT OwkPipe a
-type OwkPipe = ConduitM Object Object IO
+type Owk = OwkT IO
 
 
 type OwkState = (Scope, IORef Location)
@@ -84,6 +82,7 @@ data Object = Dict (H.HashMap Text Object)
             | Number !Scientific
             | Bool !Bool
             | Function Function
+            | Stream (Source Owk Object)
             | Ref Ref
             | Undef
             | forall a. (Typeable a, Show a) => HaskellData a
@@ -98,9 +97,10 @@ instance Show Object where
     show (String o)   = "String " ++ show o
     show (Number o)   = "Number " ++ show o
     show (Bool o)     = "Bool " ++ show o
-    show Undef         = "Undef"
+    show Undef        = "Undef"
     show (Ref _)      = "Ref"
     show (Function _) = "Function"
+    show (Stream _)   = "Stream"
     show (HaskellData a) = "HaskellData " ++ show a
 
 instance Eq Object where
@@ -231,10 +231,10 @@ instance Ord Object where
     Undef `compare` Number _ = LT
     Undef `compare` Bool _ = LT
 
-runOwk :: Owk a -> Namespace -> Conduit Object IO Object
+runOwk :: Owk a -> Namespace -> IO ()
 runOwk o n = runOwk' o n >> return ()
 
-runOwk' :: Owk a -> Namespace -> OwkPipe a
+runOwk' :: Owk a -> Namespace -> IO a
 runOwk' (OwkT o) n = do
     -- FIXME: don't use IORef
     r <- liftIO $ newIORef undefined

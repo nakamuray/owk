@@ -2,6 +2,7 @@
 {-# LANGUAGE PatternGuards #-}
 module Owk.Builtin where
 
+import Data.Conduit
 import Control.Applicative ((<$>))
 import Control.Monad ((>=>))
 import Control.Monad.Cont (callCC)
@@ -12,6 +13,7 @@ import Data.Text.ICU (regex', find)
 import System.Exit (ExitCode(..), exitSuccess, exitWith)
 import System.FilePath ((</>), (<.>), dropFileName, joinPath)
 
+import qualified Data.Conduit.List as CL
 import qualified Data.HashMap.Strict as H
 import qualified Data.Text as T
 import qualified Data.Vector as V
@@ -37,7 +39,6 @@ builtins =
 
     , ("sort", builtin1M sort)
     , ("expand", builtin1M expand)
-    , ("putex", builtin1M putex)
     , ("split", builtin2 split)
     , ("length", builtin1M length_)
 
@@ -71,11 +72,12 @@ builtins =
     , ("else", builtin1M else_)
     , ("case", builtin1M case_)
     , ("for", builtin1M for)
-    , ("map", builtin2M map_)
     , ("while", builtin1M while)
 
-    , ("put", builtin1M put)
-    , ("get", builtin1M get)
+    -- stream functions
+    , (">>", builtin2 __comp__)
+    , ("map", builtin2M map_)
+
     , ("callcc", builtin1M callcc)
     , ("exit", builtin1M exit_)
 
@@ -94,9 +96,6 @@ sort (List v) = do
 sort d@(Dict _) = sort (list d)
 sort Undef = sort (list Undef)
 sort obj = exception $ "sort: not a List: " <> show obj
-
-putex :: Object -> Owk Object
-putex = expand >=> put
 
 -- TODO: split using regex
 split :: Object -> Object -> Object
@@ -222,8 +221,12 @@ for Undef = for (list Undef)
 for _ = exception "for: not implemented"
 
 map_ :: Object -> Object -> Owk Object
+map_ f (Stream s) = return $ Stream (s $= CL.mapM (funcCall f))
 map_ f (List v) = List <$> V.mapM (funcCall f) v
 map_ f o = map_ f $ list o
+
+__comp__ :: Object -> Object -> Object
+__comp__ f g = Function $ \o -> funcCall f o >>= funcCall g
 
 while :: Function
 while cond = return . Function $ \block -> go block Undef
@@ -233,18 +236,6 @@ while cond = return . Function $ \block -> go block Undef
         if b
           then funcCall block unit >>= go block
           else return ret
-
-put :: Function
-put o = do
-    lift $ yield o
-    return Undef
-
-get :: Function
-get _ = do
-    mo <- lift await
-    case mo of
-        Just o  -> return o
-        Nothing -> return Undef
 
 callcc :: Function
 callcc body = callCC $ \cont -> funcCall body (Function cont)
