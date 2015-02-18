@@ -84,6 +84,12 @@ builtins =
     , ("reduce", builtin2M reduce_)
     , ("r", builtin2M reduce_)
     , ("consume", builtin1M consume_)
+    , ("drop", builtin2 drop_)
+    , ("take", builtin2 take_)
+    , ("zip", builtin2 zip_)
+    , ("counter", builtin1 counter)
+    , ("tail", builtin2 tail_)
+    , ("stream", builtin1 stream)
 
     , ("callcc", builtin1M callcc)
     , ("exit", builtin1M exit_)
@@ -262,6 +268,46 @@ consume_ (Stream s) = do
     l <- s $$ CL.consume
     return $ List $ V.fromList l
 consume_ o = return $ list o
+
+drop_ :: Object -> Object -> Object
+drop_ n (List v) = List $ V.drop (_toInt n) v
+drop_ n (Stream s) = Stream $ s $= (CL.drop (_toInt n) >> CL.map id)
+drop_ n o = drop_ n $ list o
+
+take_ :: Object -> Object -> Object
+take_ n (List v) = List $ V.take (_toInt n) v
+take_ n (Stream s) = Stream $ s $= CL.isolate (_toInt n)
+take_ n o = take_ n $ list o
+
+zip_ :: Object -> Object -> Object
+zip_ (Stream s1) (Stream s2) = Stream $ sequenceSources [s1, s2] $= CL.map Tuple
+zip_ s@(Stream _) o = zip_ s (stream o)
+zip_ o s@(Stream _) = zip_ (stream o) s
+zip_ (List v1) (List v2) = List $ V.map (\(o1, o2) -> Tuple [o1, o2]) $ V.zip v1 v2
+zip_ o1 o2 = zip_ (list o1) (list o2)
+
+counter :: Object -> Object
+counter n = Stream $ CL.sourceList $ map (Number . fromInteger) [(_toInt n)..]
+
+tail_ :: Object -> Object -> Object
+tail_ n (List v) = List $ V.drop (V.length v - _toInt n) v
+tail_ n (Stream s) = Stream $ s $= go []
+  where
+    i = _toInt n
+    go acc = do
+        mo <- await
+        case mo of
+            Nothing -> CL.sourceList $ reverse acc
+            Just o  -> go $ take i $ o:acc
+tail_ n o = tail_ n (list o)
+
+_toInt :: Integral a => Object -> a
+_toInt o = let Number i = num o in floor i
+
+stream :: Object -> Object
+stream s@(Stream _) = s
+stream (List v) = Stream $ CL.sourceList $ V.toList v
+stream o = stream $ list o
 
 __comp__ :: Object -> Object -> Object
 __comp__ f g = Function $ \o -> funcCall f o >>= funcCall g
