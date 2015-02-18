@@ -315,7 +315,7 @@ str' (Tuple os) = "(" <> T.intercalate ", " (map str' os) <> ")"
 str' (List v) = "[" <> T.intercalate ", " (map str' $ V.toList v) <> "]"
 str' (Dict h) = "{" <> T.intercalate ", " (map toKV $ H.toList h) <> "}"
   where
-    toKV (k, v) = k <> " => " <> str' v
+    toKV (k, v) = k <> ": " <> str' v
 str' (HaskellData a) = showText a
 
 num :: Object -> Object
