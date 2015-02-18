@@ -92,6 +92,7 @@ builtins =
     , ("zip", builtin2 zip_)
     , ("counter", builtin1 counter)
     , ("tail", builtin2 tail_)
+    , ("join", builtin1 join_)
     , ("stream", builtin1 stream)
 
     , ("callcc", builtin1M callcc)
@@ -312,6 +313,18 @@ tail_ n o = tail_ n (list o)
 
 _toInt :: Integral a => Object -> a
 _toInt o = let Number i = num o in floor i
+
+join_ :: Object -> Object
+join_ (Stream s) = Stream $ s $= awaitForever (\o ->
+    case o of
+        List v -> V.mapM_ yield v
+        _      -> yield o
+    )
+join_ (List v) = List $ flip V.concatMap v $ \o ->
+    case o of
+        List v' -> v'
+        _       -> V.singleton o
+join_ o = join_ $ list o
 
 stream :: Object -> Object
 stream s@(Stream _) = s
