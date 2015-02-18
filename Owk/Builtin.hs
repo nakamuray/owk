@@ -16,6 +16,7 @@ import System.FilePath ((</>), (<.>), dropFileName, joinPath)
 import qualified Data.Conduit.List as CL
 import qualified Data.HashMap.Strict as H
 import qualified Data.Text as T
+import qualified Data.Text.IO as TI
 import qualified Data.Vector as V
 import qualified Data.Vector.Algorithms.Intro as VI
 
@@ -36,6 +37,8 @@ builtins =
     , ("bool", builtin1 bool)
     , ("not", builtin1 __not__)
     , ("ref", Function $ \obj -> Ref <$> ref obj)
+
+    , ("print", builtin1M print_)
 
     , ("sort", builtin1M sort)
     , ("expand", builtin1M expand)
@@ -99,6 +102,12 @@ builtins =
 
 
 -- functions
+print_ :: Object -> Owk Object
+print_ (String t) = do
+    liftIO $ TI.putStrLn t
+    return Undef
+print_ o = print_ $ str o
+
 sort :: Object -> Owk Object
 sort (List v) = do
     v' <- liftIO $ do
