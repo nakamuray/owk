@@ -90,7 +90,7 @@ builtins =
     , ("drop", builtin2 drop_)
     , ("take", builtin2 take_)
     , ("zip", builtin2 zip_)
-    , ("counter", builtin1 counter)
+    , ("iterate", builtin2 iterate_)
     , ("tail", builtin2 tail_)
     , ("join", builtin1 join_)
     , ("stream", builtin1 stream)
@@ -296,8 +296,13 @@ zip_ o s@(Stream _) = zip_ (stream o) s
 zip_ (List v1) (List v2) = List $ V.map (\(o1, o2) -> Tuple [o1, o2]) $ V.zip v1 v2
 zip_ o1 o2 = zip_ (list o1) (list o2)
 
-counter :: Object -> Object
-counter n = Stream $ CL.sourceList $ map (Number . fromInteger) [(_toInt n)..]
+iterate_ :: Object -> Object -> Object
+iterate_ f o = Stream $ go o
+  where
+    go o' = do
+        yield o'
+        o'' <- lift $ funcCall f o'
+        go o''
 
 tail_ :: Object -> Object -> Object
 tail_ n (List v) = List $ V.drop (V.length v - _toInt n) v
