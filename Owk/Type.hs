@@ -54,6 +54,7 @@ import Data.Scientific (Scientific, floatingOrInteger)
 import Data.Text (Text)
 import Data.Typeable (Typeable)
 import Data.Vector (Vector)
+import Text.Trifecta.Delta (Delta(Columns))
 
 import qualified Data.HashMap.Strict as H
 import qualified Data.Text as T
@@ -261,7 +262,7 @@ runOwk' :: Owk a -> Namespace -> IO a
 runOwk' (OwkT o) n = do
     -- FIXME: don't use IORef
     r <- liftIO $ newIORef undefined
-    rloc <- liftIO $ newIORef undefined
+    rloc <- liftIO $ newIORef (Columns 0 0, "")
     runReaderT (runContT o (\a -> liftIO $ writeIORef r a)) (Global n, rloc)
     liftIO $ readIORef r
 
