@@ -261,7 +261,7 @@ runOwk o n = runOwk' o n >> return ()
 runOwk' :: Owk a -> Namespace -> IO a
 runOwk' (OwkT o) n = do
     -- FIXME: don't use IORef
-    r <- liftIO $ newIORef undefined
+    r <- liftIO $ newIORef (error "undefined ref")
     rloc <- liftIO $ newIORef (Columns 0 0, "")
     runReaderT (runContT o (\a -> liftIO $ writeIORef r a)) (Global n, rloc)
     liftIO $ readIORef r
@@ -275,14 +275,14 @@ exception msg = do
 dict :: Object -> Object
 dict o@(Dict _) = o
 dict Undef = Dict H.empty
-dict _ = undefined
+dict o = error $ "undefined: dict " <> show o
 
 list :: Object -> Object
 list o@(List _) = o
 list (Dict h) = List $ V.fromList $ map String $ H.keys h
 list Undef = List V.empty
 list (String t) = List $ V.fromList $ map (String . T.singleton) $ T.unpack t
-list _ = undefined
+list o = error $ "undefined: list " <> show o
 
 str :: Object -> Object
 str o@(String _) = o
