@@ -53,8 +53,10 @@ owkEval fname script _ =  -- ignore src
         Left e     -> error e
         Right prog -> do
             n <- liftIO $ Namespace.fromList globalNamespace
-            liftIO $ runOwk'' fname prog n
-            return ()
+            o <- liftIO $ runOwk'' fname prog n
+            case o of
+                Stream s -> transPipe (\o' -> runOwk' o' n) s
+                _        -> yield o
 
 -- run program and return last expression as a main function
 runOwk'' :: String -> AST.Program -> Namespace.Namespace -> IO Object

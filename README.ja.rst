@@ -7,8 +7,8 @@ awk 的に使えることを目指して作られている DSL/interpreter で�
 
 ::
 
-  $ owk -e 'print "hello world"'
-  hello world
+  $ owk -e '"hello world"'
+  "hello world"
   $ seq 5 | owk -i line 'map { _.1 * 2 }'
   2
   4
@@ -351,12 +351,12 @@ owk コマンドについて
   [10]
 
 ``-e`` オプションを指定することで、
-入力を読み込まず渡された script を実行するだけの `eval` モードになります。
+入力を読み込まず渡された script を実行し、最後の式の値を表示する `eval` モードになります。
 
 ::
 
-  $ seq 10 | owk -e 'print "hi"'
-  hi
+  $ seq 10 | owk -e '"hi"'
+  "hi"
 
 
 入力をどのようにパースするかは ``-i`` オプションで指定できます。
@@ -380,7 +380,7 @@ owk コマンドについて
 
 ::
 
-  $ owk -o ltsv -e 'print { key: "value", key2: 100 }'
+  $ owk -o ltsv -e '{ key: "value", key2: 100 }'
   key:value	key2:100
 
 
