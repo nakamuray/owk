@@ -9,13 +9,13 @@ awk 的に使えることを目指して作られている DSL/interpreter で�
 
   $ owk -e '"hello world"'
   "hello world"
-  $ seq 5 | owk -i line 'map { _.1 * 2 }'
+  $ seq 5 | owk -i line 'map { _ * 2 }'
   2
   4
   6
   8
   10
-  $ seq 5 | owk -i line 'map { _.1 * 2 } >> filter { _ < 10 }'
+  $ seq 5 | owk -i line 'map { _ * 2 } >> filter { _ < 10 }'
   2
   4
   6
@@ -36,7 +36,7 @@ owk コマンドについて
 
 ::
 
-  $ seq 10 | owk -io line 'print "init"; map input -> { "[" + input.0 + "]" }'
+  $ seq 10 | owk -io word 'print "init"; map input -> { "[" + input.0 + "]" }'
   init
   [1]
   [2]
@@ -67,12 +67,12 @@ owk コマンドについて
   2
   3
 
-例えば ``-i line`` と指定することで、行ごとにスペースで分割し、数値もしくは文字列として、
+例えば ``-i word`` と指定することで、行ごとにスペースで分割し、数値もしくは文字列として、
 数値をキーにした辞書に格納され、渡るようになります。
 
 ::
 
-  $ echo '1 2 three' | owk -io line 'map { _ }'
+  $ echo '1 2 three' | owk -io word 'map { _ }'
   {0: "1 2 three", 1: 1, 2: 2, 3: "three"}
 
 また、出力をどのように変換するかは ``-o`` オプションで指定できます。
@@ -90,7 +90,7 @@ owk コマンドについて
 
 ::
 
-  $ seq 10 | owk -i line 'map { _.1 * 2 }'
+  $ seq 10 | owk -i line 'map { _ * 2 }'
   2
   4
   6
@@ -106,7 +106,7 @@ owk コマンドについて
 
 ::
 
-  $ seq 10 | owk -i line 'filter i -> { i.1 > 5 }'
+  $ seq 10 | owk -i line 'filter i -> { i > 5 }'
   {
       "0": "6",
       "1": 6
@@ -133,14 +133,14 @@ owk コマンドについて
 
 ::
 
-  $ seq 10 | owk -i line 'fold (acc -> i -> { acc + i.1 }) 0'
+  $ seq 10 | owk -i line 'fold (acc -> i -> { acc + i }) 0'
   55
 
 また、 ``>>`` 演算子により、それぞれの関数を連結した関数とすることが出来ます。
 
 ::
 
-  $ seq 10 | owk -i line 'map { _.1 + 1 } >> map { _ * 2 } >> fold (acc -> i -> acc + i) 0'
+  $ seq 10 | owk -i line 'map { _ + 1 } >> map { _ * 2 } >> fold (acc -> i -> acc + i) 0'
   130
 
 ``$>`` 演算子は左辺の値を右辺の関数に適用します。

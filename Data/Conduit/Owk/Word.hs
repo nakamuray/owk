@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Data.Conduit.Owk.Line
+module Data.Conduit.Owk.Word
     ( toObject
     , fromObjects
     ) where
@@ -11,13 +11,17 @@ import Data.Monoid ((<>))
 import qualified Data.Conduit.List as CL
 import qualified Data.Conduit.Text as CT
 import qualified Data.Text as T
+import qualified Data.HashMap.Strict as H
 
 import Data.Conduit.Owk.Type
 import Owk.Type
 import Owk.Util
 
 toObject :: OwkInput
-toObject = CT.decode CT.utf8 =$= CT.lines =$= CL.map (\line -> numberOrString line)
+toObject = CT.decode CT.utf8 =$= CT.lines =$= CL.map (\line -> Dict
+                                                     $ H.fromList
+                                                     $ zip (map showText [0 :: Int ..])
+                                                     $ String line : map numberOrString (T.words line))
 
 numberOrString :: T.Text -> Object
 numberOrString t = maybe (String t) Number $ parseNumber t

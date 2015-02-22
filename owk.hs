@@ -15,6 +15,7 @@ import qualified Data.Text.IO as TI
 import Data.Conduit.Owk
 import Data.Conduit.Owk.Type
 import qualified Data.Conduit.Owk.ApacheLog as ApacheLog
+import qualified Data.Conduit.Owk.Word as Word
 import qualified Data.Conduit.Owk.Line as Line
 import qualified Data.Conduit.Owk.LTSV as LTSV
 import qualified Data.Conduit.Owk.JSON as JSON
@@ -50,6 +51,7 @@ run (Config mode scriptText i o) = do
 inputs :: [(String, OwkInput)]
 inputs =
     [ ("line", Line.toObject)
+    , ("word", Word.toObject)
     , ("ltsv", LTSV.toObject)
     , ("json", JSON.toObject)
     , ("jsonpp", JSON.toObject)
@@ -59,6 +61,7 @@ inputs =
 outputs :: [(String, OwkOutput)]
 outputs =
     [ ("line", Line.fromObjects)
+    , ("word", Word.fromObjects)
     , ("ltsv", LTSV.fromObjects)
     , ("json", JSON.fromObjects)
     , ("jsonpp", JSON.fromObjectsPretty)
@@ -79,6 +82,7 @@ usage = unlines
     , "         -io TYPE               set both input/output"
     , ""
     , "TYPE: line"
+    , "      word"
     , "      ltsv"
     , "      json"
     , "      jsonpp (output only) [default]"
