@@ -38,6 +38,9 @@ builtins =
     , ("not", builtin1 __not__)
     , ("ref", Function $ \obj -> Ref <$> ref obj)
 
+    , ("const", builtin2 const)
+    , ("id", builtin1 id)
+
     , ("print", builtin1M print_)
 
     , ("sort", builtin1M sort)
