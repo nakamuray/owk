@@ -62,6 +62,7 @@ owk コマンドについて
 デフォルトでは JSON のストリームとしてパースされます。
 
 ::
+
   $ echo '{ "value": 1 } { "value": 2 } { "value": 3 }' | owk -i json 'map { _.value }'
   1
   2
