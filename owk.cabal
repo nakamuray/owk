@@ -27,7 +27,6 @@ executable owk
                      , containers
                      , filepath
                      , mtl
-                     , old-locale
                      , parsers
                      , pretty-show
                      , scientific >= 0.3
@@ -58,7 +57,6 @@ test-suite test-owk
                      , containers
                      , filepath
                      , mtl
-                     , old-locale
                      , parsers
                      , pretty-show
                      , scientific >= 0.3

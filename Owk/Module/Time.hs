@@ -3,10 +3,9 @@
 module Owk.Module.Time (time) where
 
 import Data.Time (UTCTime, utcToLocalZonedTime)
-import Data.Time.Format (formatTime, parseTime)
+import Data.Time.Format (defaultTimeLocale, formatTime, parseTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Data.Typeable (cast)
-import System.Locale (defaultTimeLocale)
 
 import qualified Data.HashMap.Strict as H
 import qualified Data.Text as T
