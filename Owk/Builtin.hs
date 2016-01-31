@@ -8,7 +8,7 @@ import Control.Monad (when)
 import Control.Monad.Cont (callCC)
 import Data.Maybe (isJust)
 import Data.Monoid ((<>))
-import Data.Scientific (floatingOrInteger)
+import Data.Scientific (floatingOrInteger, fromFloatDigits, toRealFloat)
 import Data.Text.ICU (regex', find)
 import System.Exit (ExitCode(..), exitSuccess, exitWith)
 import System.FilePath ((</>), (<.>), dropFileName, joinPath)
@@ -52,7 +52,7 @@ builtins =
     , ("+", builtin2M __add__)
     , ("$", builtin2M __app__)
     , ("$>", builtin2M (flip __app__))
-    , ("/", numop (/))
+    , ("/", numop __div__)
     , ("__get__", builtin1M __get__)
     , ("*", numop (*))
     , ("__num__", builtin1 num)
@@ -158,6 +158,12 @@ __app__ obj arg = funcCall obj arg
 __neg__ :: Object -> Owk Object
 __neg__ (Number n) = return $ Number $ -n
 __neg__ obj = exception $ "not a number: " <> show obj
+
+__div__ :: Scientific -> Scientific -> Scientific
+__div__ x y =
+    let x' = toRealFloat x :: Double
+        y' = toRealFloat y :: Double
+    in fromFloatDigits $ x' / y'
 
 __mod__ :: Scientific -> Scientific -> Scientific
 __mod__ x y = __mod__' (floatingOrInteger x) (floatingOrInteger y)
