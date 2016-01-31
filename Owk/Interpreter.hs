@@ -80,16 +80,15 @@ funcCall :: Object -> Object -> Owk Object
 funcCall (Type.Function f) arg = f arg
 funcCall (Type.Ref r) _ = readRef r
 funcCall (Type.List v) (Type.Number s)
-    | Just i <- toBoundedInteger s,
-      i < V.length v = return $ v V.! i
-    | otherwise = return Type.Undef
+    | Just i <- toBoundedInteger s = return $ v !!! i
 funcCall (Type.List v) (Type.List args)
     | [Type.Number s] <- V.toList args,
-      Just i <- toBoundedInteger s = return $ v V.! i
+      Just i <- toBoundedInteger s = return $ v !!! i
     | [Type.Number s, Type.Number t] <- V.toList args,
       (Just i, Just j) <- (toBoundedInteger s, toBoundedInteger t) =
         let len = V.length v
-            start = max 0 $ min len i
+            i' = if i >= 0 then i else i + len
+            start = max 0 $ min len i'
             count = min (len - start) j
         in return $ Type.List $ V.slice start count v
 funcCall (Type.List _) _ = exception "list only accept 1 or 2 numbers"
@@ -138,3 +137,7 @@ matchHash ps oh = do
             Just o  -> match p o
             Nothing -> Nothing
     return $ concat mss
+
+(!!!) :: V.Vector Object -> Int -> Object
+(!!!) v i | i >= 0    = if i < V.length v then v V.! i else Type.Undef
+          | otherwise = if negate i <= V.length v then v V.! (V.length v + i) else Type.Undef

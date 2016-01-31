@@ -46,6 +46,26 @@ case_list_3 = testOwk_ $ do
     x <- funcCall (Type.List $ V.fromList [Type.String "x", Type.String "y", Type.String "z"]) (Type.List (V.fromList [Type.Number 0]))
     liftIO $ x @?= Type.String "x"
 
+case_list_4 = testOwk_ $ do
+    x <- funcCall (Type.List $ V.fromList [Type.String "x", Type.String "y", Type.String "z"]) (Type.List (V.fromList [Type.Number (-1)]))
+    liftIO $ x @?= Type.String "z"
+
+case_list_5 = testOwk_ $ do
+    x <- funcCall (Type.List $ V.fromList [Type.String "x", Type.String "y", Type.String "z"]) (Type.List (V.fromList [Type.Number (-3)]))
+    liftIO $ x @?= Type.String "x"
+
+case_list_6 = testOwk_ $ do
+    x <- funcCall (Type.List $ V.fromList [Type.String "x", Type.String "y", Type.String "z"]) (Type.List (V.fromList [Type.Number (-4)]))
+    liftIO $ x @?= Type.Undef
+
+case_list_7 = testOwk_ $ do
+    x <- funcCall (Type.List $ V.fromList [Type.String "a", Type.String "b", Type.String "c", Type.String "d"]) (Type.List (V.fromList [Type.Number 1, Type.Number 2]))
+    liftIO $ x @?= Type.List (V.fromList [Type.String "b", Type.String "c"])
+
+case_list_8 = testOwk_ $ do
+    x <- funcCall (Type.List $ V.fromList [Type.String "a", Type.String "b", Type.String "c", Type.String "d"]) (Type.List (V.fromList [Type.Number (-2), Type.Number 2]))
+    liftIO $ x @?= Type.List (V.fromList [Type.String "c", Type.String "d"])
+
 case_dict_0 = testOwk_ $ do
     d <- expr $ AST.Dict []
     liftIO $ d @?= Type.Dict H.empty
