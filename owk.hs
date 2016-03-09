@@ -17,6 +17,7 @@ import Data.Conduit.Owk.Type
 import qualified Data.Conduit.Owk.ApacheLog as ApacheLog
 import qualified Data.Conduit.Owk.Word as Word
 import qualified Data.Conduit.Owk.Line as Line
+import qualified Data.Conduit.Owk.CSV as CSV
 import qualified Data.Conduit.Owk.LTSV as LTSV
 import qualified Data.Conduit.Owk.JSON as JSON
 import Owk.Parser
@@ -52,6 +53,7 @@ inputs :: [(String, OwkInput)]
 inputs =
     [ ("line", Line.toObject)
     , ("word", Word.toObject)
+    , ("csv", CSV.toObject)
     , ("ltsv", LTSV.toObject)
     , ("json", JSON.toObject)
     , ("jsonpp", JSON.toObject)
@@ -62,6 +64,7 @@ outputs :: [(String, OwkOutput)]
 outputs =
     [ ("line", Line.fromObjects)
     , ("word", Word.fromObjects)
+    , ("csv", CSV.fromObjects)
     , ("ltsv", LTSV.fromObjects)
     , ("json", JSON.fromObjects)
     , ("jsonpp", JSON.fromObjectsPretty)
@@ -83,6 +86,7 @@ usage = unlines
     , ""
     , "TYPE: line"
     , "      word"
+    , "      csv"
     , "      ltsv"
     , "      json"
     , "      jsonpp (output only) [default]"

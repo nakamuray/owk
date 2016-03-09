@@ -25,6 +25,7 @@ executable owk
                      , conduit >= 1.0
                      , conduit-extra
                      , containers
+                     , csv-conduit
                      , filepath
                      , mtl
                      , parsers
